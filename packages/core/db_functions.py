@@ -1,10 +1,6 @@
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta
-from collections import defaultdict
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+from datetime import date
 import numpy as np
 import pandas as pd
 import io
