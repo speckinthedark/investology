@@ -1,3 +1,7 @@
+#Secrets
+secrets.json
+packages/core/resources/data/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
