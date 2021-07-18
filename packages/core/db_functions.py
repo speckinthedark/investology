@@ -1,6 +1,7 @@
 import pprint
+import glob
 pp = pprint.PrettyPrinter(indent=4)
-from datetime import date
+from datetime import date, timedelta
 import numpy as np
 import pandas as pd
 import io
@@ -8,6 +9,7 @@ import requests
 import sys
 import time
 import os
+import re
 import tqdm
 from nsepy import get_history
 
@@ -16,7 +18,7 @@ path = f"./packages/core"
 os.chdir(path)
 
 # Global Variables
-path_to_indices = f"./resources/indices.csv"
+path_to_indices = f"./resources/indices_full.csv"
 path_to_data = f"./resources/data/"
 cols_for_db = ['Close', 'VWAP', 'Volume', 'Turnover', 'Trades', 'Deliverable Volume', '%Deliverble']
 
@@ -46,49 +48,79 @@ def create_base_df(start_date, end_date):
     return base_df
 
 
-def create_db(path_to_indices, cols_for_db, start_date, end_date):
+def store_historical_data(list_of_stocks, cols_for_db, start_date, end_date):
     
-    list_of_symbols = get_tickrs(path_to_indices)
-
-    base_df = create_base_df(start_date, end_date)
-    dict_of_dbs = {col:base_df for col in cols_for_db}
+    list_of_stocks = ["SBIN", "MINDTREE"]
     
-    # pp.pprint(dict_of_dbs)
+    print(start_date, end_date)
 
-    list_of_symbols = ["SBIN", "MINDTREE"]
+    for symbol in tqdm.tqdm(list_of_stocks):
+        symbol_df = get_history(symbol, start_date, end_date)[cols_for_db]
+        symbol_df.sort_index(axis = 0, inplace = True)
+        symbol_df.to_pickle(path_to_data + "stocks_history/" + symbol + ".pkl")
+
+
+def check_historical_consistency(path_to_stocks_history):
     
+    check = True
+    list_of_stock_dfs = glob.glob(path_to_stocks_history + "*")
+    today = date.today()
+    dayb4yest = today - timedelta(days = 2)
+    latest_date = get_history("SBIN", dayb4yest, today).index.max()
 
-    for symbol in tqdm.tqdm(list_of_symbols):
-        symbol_df = get_history(symbol, start_date, end_date)
-        for col, df in dict_of_dbs.items():
-            col_df = symbol_df.copy()[[col]]
-            col_df.columns = [symbol]
-            dict_of_dbs[col] = pd.concat([df, col_df], axis = 1)
+    for stock_df in list_of_stock_dfs:
+        max_date = pd.read_pickle(stock_df).index.max()
+        if max_date != latest_date:
+            print("Historical database not updated. Please update database and run again.")
+            check = False
+            return check
     
-    # pp.pprint(dict_of_dbs)
-
-    for col, df in dict_of_dbs.items():
-        file_name = "hist_" + col + ".pkl"
-        print("Saving ", col, " data in ", path_to_data, "as: ", file_name)
-        df.to_pickle(path_to_data + file_name)
+    print("The historical database is good to go")
+    return check
 
 
+def update_historical_database(path_to_stocks_history, verbose = False):
 
+
+    list_of_stock_dfs = glob.glob(path_to_stocks_history + "*")
+
+
+    today = date.today()
+    dayb4yest = today - timedelta(days = 2)
+    latest_date = get_history("SBIN", dayb4yest, today).index.max()
+
+    for stock in list_of_stock_dfs:
+        name = re.search('(.*).pkl', stock.split("/")[-1]).group(1)
+        stock_df = pd.read_pickle(stock)
+        cols_for_db = stock_df.columns.to_list()
+        max_current_date = stock_df.index.max()
+        if max_current_date != latest_date:
+            if verbose:
+                print("Updating : ", name)
+                print("Current latest date : ", max_current_date, "\nLatest available date : ", latest_date) 
+            temp_df = get_history(name, max_current_date + timedelta(days = 1), latest_date)[cols_for_db]
+            stock_df = stock_df.append(temp_df)
+            stock_df.sort_index(axis = 0, inplace = True)
+            stock_df.to_pickle(stock)
+            if verbose:
+                print(name, " : historical data has been updated.")
     
+    print("Database has been updated.")
+
+
+list_of_stocks = pd.read_pickle(path_to_data + "base_df.pkl").Tickr.to_list()
+path_to_stocks_history = path_to_data + "stocks_history/"
+
+# def create_consolidated_dfs(path_to_stocks_history, output_location):
+#     check_historical_consistency(path_to_stocks_history)
+
+
+store_historical_data(list_of_stocks, cols_for_db, start_date, end_date - timedelta(days = 4))
+check_historical_consistency(path_to_stocks_history)
+update_historical_database(path_to_stocks_history, verbose = False)
 
 
 
-create_db(path_to_indices, cols_for_db, start_date, end_date)
 
 
 
-# pp.pprint(get_tickrs(path_to_indices))
-
-# print("Hello World")
-# tickr = "SBIN"
-# start_date = date(2018,7,10)
-# end_date = date.today()
-
-# df = download_data(tickr, start_date, end_date)
-
-# print(df.head())
