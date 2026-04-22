@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{uid}
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (optional)
+    //   - email: string (required)
+    //   - currency: string (optional)
+    //
+    // Collection: /users/{uid}/holdings/{ticker}
+    // Fields:
+    //   - ticker: string (required)
+    //   - shares: number (required)
+    //   - averagePrice: number (required)
+    //   - lastPrice: number (optional)
+    //   - lastUpdated: string (optional)
+    //
+    // Collection: /users/{uid}/transactions/{transactionId}
+    // Fields:
+    //   - ticker: string (required)
+    //   - type: string (required, enum: ["buy", "sell", "deposit", "withdrawal"])
+    //   - shares: number (required)
+    //   - price: number (required)
+    //   - timestamp: string (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string &&
+             data.email is string;
+    }
+
+    function isValidHolding(data) {
+      return data.keys().hasAll(['ticker', 'shares', 'averagePrice']) &&
+             data.ticker is string &&
+             data.shares is number &&
+             data.averagePrice is number;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['ticker', 'type', 'shares', 'price', 'timestamp']) &&
+             data.ticker is string &&
+             data.type in ['buy', 'sell', 'deposit', 'withdrawal'] &&
+             data.shares is number &&
+             data.price is number &&
+             data.timestamp is string;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidUser(request.resource.data);
+      allow update: if isOwner(uid) && isValidUser(request.resource.data);
+
+      match /holdings/{ticker} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidHolding(request.resource.data);
+        allow update: if isOwner(uid) && isValidHolding(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      match /transactions/{transactionId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidTransaction(request.resource.data);
+        allow update: if isOwner(uid) && isValidTransaction(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+    }
+  }
+}

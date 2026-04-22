@@ -1,0 +1,5 @@
+{
+  "name": "StockPulse Tracker",
+  "description": "A personal stock portfolio tracker with real-time-like visualizations and performance analysis.",
+  "requestFramePermissions": []
+}

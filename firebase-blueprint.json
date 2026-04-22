@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Information about the user and their preferences.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "currency": { "type": "string", "description": "The user's preferred currency (e.g., USD)." }
+      },
+      "required": ["uid", "email"]
+    },
+    "Holding": {
+      "title": "Stock Holding",
+      "description": "A specific stock held by the user.",
+      "type": "object",
+      "properties": {
+        "ticker": { "type": "string", "description": "The stock ticker symbol (e.g., AAPL)." },
+        "shares": { "type": "number", "description": "The number of shares owned." },
+        "averagePrice": { "type": "number", "description": "The average purchase price per share." },
+        "lastPrice": { "type": "number", "description": "The last known price of the stock." },
+        "lastUpdated": { "type": "string", "format": "date-time", "description": "When the price was last updated." }
+      },
+      "required": ["ticker", "shares", "averagePrice"]
+    },
+    "Transaction": {
+      "title": "Transaction Record",
+      "description": "A record of a buy or sell transaction.",
+      "type": "object",
+      "properties": {
+        "ticker": { "type": "string", "description": "The stock ticker symbol." },
+        "type": { "type": "string", "enum": ["buy", "sell"], "description": "The type of transaction." },
+        "shares": { "type": "number", "description": "The number of shares." },
+        "price": { "type": "number", "description": "The price per share at the time of transaction." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the transaction occurred." }
+      },
+      "required": ["ticker", "type", "shares", "price", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "The user's profile document."
+    },
+    "/users/{uid}/holdings/{ticker}": {
+      "schema": "Holding",
+      "description": "The user's individual stock holdings."
+    },
+    "/users/{uid}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "The user's transaction history."
+    }
+  }
+}
