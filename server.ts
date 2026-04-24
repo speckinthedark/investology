@@ -13,6 +13,9 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 
 dotenv.config();
 
+import { runPortfolioReport, runChat, createChatSession } from './agents/index.js';
+import type { Holding } from './src/types.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -172,6 +175,81 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     } catch (e) {
       console.error('Gemini insights error:', e);
       res.status(500).json({ error: 'Failed to generate insights' });
+    }
+  });
+
+  // ─── Agent: create chat session ────────────────────────────────────────────
+  app.post('/api/agent/session', async (req, res) => {
+    const { uid, persona = 'buffett' } = req.body as { uid: string; persona?: string };
+    if (!uid) return res.status(400).json({ error: 'uid required' });
+    try {
+      const sessionId = await createChatSession(uid, persona);
+      res.json({ sessionId });
+    } catch (e) {
+      console.error('Session creation error:', e);
+      res.status(500).json({ error: 'Failed to create session' });
+    }
+  });
+
+  // ─── Agent: portfolio risk report (SSE) ───────────────────────────────────
+  app.post('/api/agent/report', async (req, res) => {
+    const { uid, holdings, cashBalance, persona = 'buffett' } = req.body as {
+      uid: string;
+      holdings: Holding[];
+      cashBalance: number;
+      persona?: string;
+    };
+
+    if (!uid || !holdings) return res.status(400).json({ error: 'uid and holdings required' });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    try {
+      for await (const event of runPortfolioReport(uid, holdings, cashBalance, persona)) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+    } catch (e) {
+      console.error('Report agent error:', e);
+      res.write(`data: ${JSON.stringify({ error: 'Report generation failed' })}\n\n`);
+    } finally {
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  });
+
+  // ─── Agent: research chat (SSE) ───────────────────────────────────────────
+  app.post('/api/agent/chat', async (req, res) => {
+    const { uid, sessionId, message, holdings, cashBalance, persona = 'buffett' } = req.body as {
+      uid: string;
+      sessionId: string;
+      message: string;
+      holdings: Holding[];
+      cashBalance: number;
+      persona?: string;
+    };
+
+    if (!uid || !sessionId || !message) {
+      return res.status(400).json({ error: 'uid, sessionId, and message required' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    try {
+      for await (const event of runChat(uid, sessionId, message, holdings, cashBalance, persona)) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+    } catch (e) {
+      console.error('Chat agent error:', e);
+      res.write(`data: ${JSON.stringify({ error: 'Agent failed to respond' })}\n\n`);
+    } finally {
+      res.write('data: [DONE]\n\n');
+      res.end();
     }
   });
 
