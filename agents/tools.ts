@@ -73,6 +73,7 @@ const TTL_MS = 24 * 60 * 60 * 1000;
 // ─── get_fundamentals ─────────────────────────────────────────────────────────
 
 export async function getFundamentals(ticker: string): Promise<Fundamentals> {
+  ticker = ticker.toUpperCase().trim();
   const cached = fundamentalsCache.get(ticker);
   if (cached && Date.now() - cached.fetchedAt < TTL_MS) {
     console.log(`[fundamentals cache hit] ${ticker}`);
@@ -80,9 +81,14 @@ export async function getFundamentals(ticker: string): Promise<Fundamentals> {
   }
 
   console.log(`[fundamentals fetch] ${ticker}`);
-  const result = await yahooFinance.quoteSummary(ticker, {
-    modules: ['financialData', 'defaultKeyStatistics', 'summaryDetail', 'assetProfile'],
-  });
+  let result;
+  try {
+    result = await yahooFinance.quoteSummary(ticker, {
+      modules: ['financialData', 'defaultKeyStatistics', 'summaryDetail', 'assetProfile'],
+    });
+  } catch (err) {
+    throw new Error(`Failed to fetch fundamentals for ${ticker}: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   const data: Fundamentals = {
     ticker,
@@ -123,6 +129,9 @@ export async function getStockQuote(ticker: string, apiKey: string): Promise<{
   ticker: string; price: number; change: number; changePercent: number; sector: string;
 }> {
   const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`);
+  if (!res.ok) {
+    throw new Error(`Finnhub API error ${res.status} for ${ticker}`);
+  }
   const quote = await res.json();
   return {
     ticker,
@@ -131,6 +140,27 @@ export async function getStockQuote(ticker: string, apiKey: string): Promise<{
     changePercent: quote.dp ?? 0,
     sector: 'Unknown',
   };
+}
+
+// ─── get_price_history (wraps existing Yahoo Finance monthly logic) ────────────
+
+export async function getPriceHistory(ticker: string, from: string): Promise<{ date: string; close: number }[]> {
+  try {
+    const quotes = await yahooFinance.historical(ticker, {
+      period1: from,
+      period2: new Date().toISOString().split('T')[0],
+      interval: '1mo',
+    }) as { date: Date; close: number | null }[];
+    return quotes
+      .filter((q) => q.close != null)
+      .map((q) => {
+        const d = q.date;
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return { date: dateStr, close: q.close ?? 0 };
+      });
+  } catch (err) {
+    throw new Error(`Failed to fetch price history for ${ticker}: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 // ─── calculate_dcf ────────────────────────────────────────────────────────────
@@ -156,20 +186,28 @@ function runDcfScenario(
 
   const finalRevenue = currentRevenue * Math.pow(1 + growthRate, projectionYears);
   const finalFCF = finalRevenue * targetOperatingMargin;
+  if (wacc <= terminalGrowthRate) {
+    throw new Error(
+      `Invalid DCF inputs: wacc (${wacc}) must be greater than terminalGrowthRate (${terminalGrowthRate})`
+    );
+  }
   const terminalValue = (finalFCF * (1 + terminalGrowthRate)) / (wacc - terminalGrowthRate);
   const terminalPV = terminalValue / Math.pow(1 + wacc, projectionYears);
 
   const impliedEV = totalPV + terminalPV;
   const equityValue = impliedEV - netDebt;
+  if (sharesOutstanding <= 0) {
+    throw new Error(`Invalid DCF inputs: sharesOutstanding must be positive, got ${sharesOutstanding}`);
+  }
   const impliedSharePrice = Math.max(0, equityValue / sharesOutstanding);
   const upsideDownsidePct = currentPrice > 0 ? ((impliedSharePrice - currentPrice) / currentPrice) * 100 : 0;
 
   return { scenario, impliedSharePrice, upsideDownsidePct, impliedEV, terminalValuePV: terminalPV };
 }
 
-export function calculateDcf(assumptions: DCFAssumptions): DCFResult {
+export function calculateDcf(ticker: string, assumptions: DCFAssumptions): DCFResult {
   return {
-    ticker: '',
+    ticker,
     currentPrice: assumptions.currentPrice,
     scenarios: [
       runDcfScenario(assumptions, assumptions.revenueGrowthRates.bull, 'bull'),
