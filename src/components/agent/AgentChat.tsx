@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, type FC, type ReactNode } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import AgentMessage, { ChatMessage } from './AgentMessage';
 import MentionInput from './MentionInput';
@@ -16,7 +16,7 @@ interface Props {
 let messageCounter = 0;
 const nextId = () => String(++messageCounter);
 
-const AgentChat: FC<Props> = ({ uid, holdings, cashBalance, persona }) => {
+export default function AgentChat({ uid, holdings, cashBalance, persona }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -116,7 +116,7 @@ const AgentChat: FC<Props> = ({ uid, holdings, cashBalance, persona }) => {
                 Ask about your portfolio, or invoke <span className="text-emerald-400">@valuation TICKER</span> or <span className="text-blue-400">@news TICKER</span>.
               </p>
             )}
-            {messages.map((m) => React.createElement(AgentMessage, { key: m.id, message: m }))}
+            {messages.map((m) => <AgentMessage key={m.id} message={m} />)}
             <div ref={bottomRef} />
           </div>
 
@@ -125,6 +125,4 @@ const AgentChat: FC<Props> = ({ uid, holdings, cashBalance, persona }) => {
       )}
     </div>
   );
-};
-
-export default AgentChat;
+}

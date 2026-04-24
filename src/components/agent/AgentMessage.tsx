@@ -1,4 +1,3 @@
-import { type JSX } from 'react';
 import { cn } from '../../lib/utils';
 import DCFResultCard, { DCFResultData } from './DCFResultCard';
 
@@ -25,11 +24,11 @@ export interface ChatMessage {
   streaming?: boolean;
 }
 
-export interface AgentMessageProps {
+interface Props {
   message: ChatMessage;
 }
 
-export default function AgentMessage({ message }: AgentMessageProps): JSX.Element {
+export default function AgentMessage({ message }: Props) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
