@@ -6,64 +6,78 @@ import { ORCHESTRATOR_PROMPT, PORTFOLIO_RISK_PROMPT, VALUATION_PROMPT, NEWS_PROM
 
 // ─── Tool wrappers ─────────────────────────────────────────────────────────────
 
-const toolGetFundamentals = new FunctionTool({
-  description: 'Fetch company fundamentals (PE, margins, FCF, etc.) from Yahoo Finance.',
-  execute: async ({ ticker }: { ticker: string }) => getFundamentals(ticker),
-});
+// ─── Tool factories (new instances per agent to avoid duplicate-name conflict) ──
 
-const toolGetStockQuote = new FunctionTool({
-  description: 'Fetch the current real-time stock quote from Finnhub.',
-  execute: async ({ ticker }: { ticker: string }) =>
-    getStockQuote(ticker, process.env.FINNHUB_API_KEY ?? ''),
-});
+function makeFundamentalsTool() {
+  return new FunctionTool({
+    name: 'get_fundamentals',
+    description: 'Fetch company fundamentals (PE, margins, FCF, etc.) from Yahoo Finance.',
+    execute: async ({ ticker }: { ticker: string }) => getFundamentals(ticker),
+  });
+}
 
-const toolGetPriceHistory = new FunctionTool({
-  description: 'Fetch monthly price history for a ticker from Yahoo Finance.',
-  execute: async ({ ticker, from }: { ticker: string; from: string }) =>
-    getPriceHistory(ticker, from),
-});
+function makeStockQuoteTool() {
+  return new FunctionTool({
+    name: 'get_stock_quote',
+    description: 'Fetch the current real-time stock quote from Finnhub.',
+    execute: async ({ ticker }: { ticker: string }) =>
+      getStockQuote(ticker, process.env.FINNHUB_API_KEY ?? ''),
+  });
+}
 
-const toolCalculateDcf = new FunctionTool({
-  description:
-    'Calculate DCF valuation with bull/base/bear scenarios. Returns implied share prices.',
-  execute: async ({
-    ticker,
-    assumptions,
-  }: {
-    ticker: string;
-    assumptions: DCFAssumptions;
-  }) => calculateDcf(ticker, assumptions),
-});
+function makePriceHistoryTool() {
+  return new FunctionTool({
+    name: 'get_price_history',
+    description: 'Fetch monthly price history for a ticker from Yahoo Finance.',
+    execute: async ({ ticker, from }: { ticker: string; from: string }) =>
+      getPriceHistory(ticker, from),
+  });
+}
 
-// ─── Agent definitions ─────────────────────────────────────────────────────────
+function makeCalculateDcfTool() {
+  return new FunctionTool({
+    name: 'calculate_dcf',
+    description: 'Calculate DCF valuation with bull/base/bear scenarios. Returns implied share prices.',
+    execute: async ({ ticker, assumptions }: { ticker: string; assumptions: DCFAssumptions }) =>
+      calculateDcf(ticker, assumptions),
+  });
+}
 
-const newsAgent = new LlmAgent({
-  name: 'news_agent',
-  model: 'gemini-2.0-flash',
-  instruction: NEWS_PROMPT,
-  tools: [toolGetFundamentals, toolGetStockQuote, GOOGLE_SEARCH],
-});
+// ─── Agent factories (fresh instances per call to avoid parent-conflict error) ──
 
-const valuationAgent = new LlmAgent({
-  name: 'valuation_agent',
-  model: 'gemini-2.0-flash',
-  instruction: VALUATION_PROMPT,
-  tools: [toolGetFundamentals, toolGetPriceHistory, toolCalculateDcf],
-});
+function buildNewsAgent() {
+  return new LlmAgent({
+    name: 'news_agent',
+    model: 'gemini-2.0-flash',
+    instruction: NEWS_PROMPT,
+    tools: [makeFundamentalsTool(), makeStockQuoteTool(), GOOGLE_SEARCH],
+  });
+}
 
-const portfolioRiskAgent = new LlmAgent({
-  name: 'portfolio_risk_agent',
-  model: 'gemini-2.0-flash',
-  instruction: PORTFOLIO_RISK_PROMPT,
-  tools: [toolGetFundamentals, toolGetStockQuote, GOOGLE_SEARCH],
-});
+function buildValuationAgent() {
+  return new LlmAgent({
+    name: 'valuation_agent',
+    model: 'gemini-2.0-flash',
+    instruction: VALUATION_PROMPT,
+    tools: [makeFundamentalsTool(), makePriceHistoryTool(), makeCalculateDcfTool()],
+  });
+}
+
+function buildPortfolioRiskAgent() {
+  return new LlmAgent({
+    name: 'portfolio_risk_agent',
+    model: 'gemini-2.0-flash',
+    instruction: PORTFOLIO_RISK_PROMPT,
+    tools: [makeFundamentalsTool(), makeStockQuoteTool(), GOOGLE_SEARCH],
+  });
+}
 
 function buildOrchestrator(persona: string): LlmAgent {
   return new LlmAgent({
     name: 'orchestrator',
     model: 'gemini-2.0-flash',
     instruction: ORCHESTRATOR_PROMPT(persona),
-    subAgents: [newsAgent, valuationAgent],
+    subAgents: [buildNewsAgent(), buildValuationAgent()],
   });
 }
 
@@ -113,7 +127,7 @@ export async function* runPortfolioReport(
   const reportSessionService = new InMemorySessionService();
   const runner = new Runner({
     appName: APP_NAME + '_report',
-    agent: portfolioRiskAgent,
+    agent: buildPortfolioRiskAgent(),
     sessionService: reportSessionService,
   });
   const session = await reportSessionService.createSession({
