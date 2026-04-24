@@ -147,7 +147,8 @@ export async function* runPortfolioReport(
       .replace(/\s*```$/, '');
     const json = JSON.parse(cleaned);
     yield { structured: { type: 'report', ...json } };
-  } catch {
+  } catch (e) {
+    console.warn('[runPortfolioReport] Failed to parse JSON report:', e);
     yield { text: fullText };
   }
 }
@@ -165,10 +166,6 @@ export async function* runChat(
   const orchestrator = buildOrchestrator(persona);
   const runner = new Runner({ appName: APP_NAME, agent: orchestrator, sessionService });
 
-  // holdings and cashBalance are available for future use (e.g., injecting into context)
-  void holdings;
-  void cashBalance;
-
   let fullText = '';
   let activeAgent = 'orchestrator';
 
@@ -177,7 +174,7 @@ export async function* runChat(
     sessionId,
     newMessage: {
       role: 'user',
-      parts: [{ text: message }],
+      parts: [{ text: `${buildPortfolioContext(holdings, cashBalance)}\n\nUser question: ${message}` }],
     },
   })) {
     const author = event.author;
