@@ -34,3 +34,24 @@ export interface StockData {
 export type TransactionType = Transaction['type'];
 export type SortConfig = { key: string; direction: 'asc' | 'desc' };
 export type PriceHistory = Record<string, { date: string; close: number }[]>;
+
+export interface StoredMessage {
+  id: string;
+  role: 'user' | 'agent';
+  text: string;
+  agent?: string;
+  structured?: { type: string; [key: string]: unknown };
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  persona: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface StoredReport {
+  data: Record<string, unknown>;
+  generatedAt: Date;
+}
