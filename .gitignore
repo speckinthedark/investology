@@ -6,7 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
-firebase-applet-config.json
 sample_reports/
 .claude/
 .playwright-mcp/
