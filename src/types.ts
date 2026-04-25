@@ -46,7 +46,7 @@ export interface StoredMessage {
 export interface ChatSession {
   id: string;
   title: string;
-  persona: string;
+  persona: Persona;
   createdAt?: Date;
   updatedAt?: Date;
 }
