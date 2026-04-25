@@ -57,6 +57,10 @@ export default function AgentChat({ uid, holdings, cashBalance, persona }: Props
       '/api/agent/chat',
       { uid, sessionId, message: text, holdings, cashBalance, persona },
       (event) => {
+        if (event.newSessionId) {
+          setSessionId(event.newSessionId as string);
+          return;
+        }
         if (event.error) {
           setMessages((prev) =>
             prev.map((m) => m.id === agentMsgId ? { ...m, text: `Error: ${event.error}`, streaming: false } : m)
