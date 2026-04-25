@@ -32,43 +32,36 @@ async function startServer() {
   // --- Finnhub stock data ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
-    const apiKey = process.env.FINNHUB_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({ error: 'FINNHUB_API_KEY not configured' });
-    }
 
     try {
-      const [quoteRes, profileRes, candleRes] = await Promise.all([
-        fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`),
-        fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${apiKey}`),
-        fetch(
-          `https://finnhub.io/api/v1/stock/candle?symbol=${ticker}&resolution=D&from=${Math.floor(Date.now() / 1000) - 7 * 86400}&to=${Math.floor(Date.now() / 1000)}&token=${apiKey}`
-        ),
+      const [quote, history] = await Promise.all([
+        yahooFinance.quote(ticker),
+        yahooFinance.historical(ticker, {
+          period1: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
+          period2: new Date().toISOString().split('T')[0],
+          interval: '1d',
+        }).catch(() => []),
       ]);
 
-      const [quote, profile, candles] = await Promise.all([
-        quoteRes.json(),
-        profileRes.json(),
-        candleRes.json(),
-      ]);
-
-      const history = (candles.c || []).map((price: number, i: number) => ({
-        date: new Date(candles.t[i] * 1000).toISOString().split('T')[0],
-        price,
-      }));
+      const price = (quote as any).regularMarketPrice ?? 0;
+      if (!price) throw new Error(`No price data for ${ticker}`);
 
       res.json({
         ticker,
-        price: quote.c || 0,
-        change: quote.d || 0,
-        changePercent: quote.dp || 0,
-        sector: profile.finnhubIndustry || 'Other',
-        history,
+        price,
+        change: (quote as any).regularMarketChange ?? 0,
+        changePercent: (quote as any).regularMarketChangePercent ?? 0,
+        sector: (quote as any).sector ?? 'Other',
+        history: (history as any[])
+          .filter((q: any) => q.close != null)
+          .map((q: any) => ({
+            date: new Date(q.date).toISOString().split('T')[0],
+            price: q.close,
+          })),
       });
     } catch (e) {
-      console.error('Finnhub error:', e);
-      res.status(500).json({ error: 'Failed to fetch from Finnhub' });
+      console.error('Yahoo Finance quote error:', e);
+      res.status(500).json({ error: 'Failed to fetch stock data' });
     }
   });
 
