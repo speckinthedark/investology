@@ -34,13 +34,14 @@ async function startServer() {
     const { ticker } = req.params;
 
     try {
-      const [quote, history] = await Promise.all([
+      const [quote, history, summary] = await Promise.all([
         yahooFinance.quote(ticker),
         yahooFinance.historical(ticker, {
           period1: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
           period2: new Date().toISOString().split('T')[0],
           interval: '1d',
         }).catch(() => []),
+        yahooFinance.quoteSummary(ticker, { modules: ['assetProfile'] }).catch(() => null),
       ]);
 
       const price = (quote as any).regularMarketPrice ?? 0;
@@ -51,7 +52,7 @@ async function startServer() {
         price,
         change: (quote as any).regularMarketChange ?? 0,
         changePercent: (quote as any).regularMarketChangePercent ?? 0,
-        sector: (quote as any).sector ?? 'Other',
+        sector: (summary as any)?.assetProfile?.sector ?? 'Other',
         history: (history as any[])
           .filter((q: any) => q.close != null)
           .map((q: any) => ({

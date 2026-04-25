@@ -455,7 +455,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                       )}
                     </td>
                     <td className="px-6 py-5">
-                      <div className="font-mono text-sm text-white">{shares}</div>
+                      <div className="font-mono text-sm text-white">{shares.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="font-mono text-sm text-white">${avgPrice.toFixed(2)}</div>

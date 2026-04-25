@@ -17,7 +17,7 @@ export default function Nav({ user, isRefreshing, onRefresh, onLogout }: Props) 
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-zinc-900" />
           </div>
-          <span className="font-black text-xl tracking-tighter uppercase italic text-white">StockPulse</span>
+          <span className="font-black text-xl tracking-tighter uppercase italic text-white">Investology</span>
         </div>
 
         <div className="flex items-center gap-2">

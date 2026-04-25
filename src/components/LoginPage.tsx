@@ -14,7 +14,7 @@ export default function LoginPage({ onLogin }: Props) {
               <TrendingUp className="w-6 h-6 text-black" />
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter uppercase italic">StockPulse</h1>
+          <h1 className="text-6xl font-black tracking-tighter uppercase italic">Investology</h1>
           <p className="text-gray-400 text-lg">Your personal portfolio, powered by AI.</p>
         </div>
 
