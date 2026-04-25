@@ -13,6 +13,9 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 
 dotenv.config();
 
+import { runPortfolioReport, runChat, createChatSession } from './agents/index.js';
+import type { Holding } from './src/types.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -22,50 +25,43 @@ const ai = process.env.GEMINI_API_KEY
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
   // --- Finnhub stock data ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
-    const apiKey = process.env.FINNHUB_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({ error: 'FINNHUB_API_KEY not configured' });
-    }
 
     try {
-      const [quoteRes, profileRes, candleRes] = await Promise.all([
-        fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`),
-        fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${apiKey}`),
-        fetch(
-          `https://finnhub.io/api/v1/stock/candle?symbol=${ticker}&resolution=D&from=${Math.floor(Date.now() / 1000) - 7 * 86400}&to=${Math.floor(Date.now() / 1000)}&token=${apiKey}`
-        ),
+      const [quote, history] = await Promise.all([
+        yahooFinance.quote(ticker),
+        yahooFinance.historical(ticker, {
+          period1: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
+          period2: new Date().toISOString().split('T')[0],
+          interval: '1d',
+        }).catch(() => []),
       ]);
 
-      const [quote, profile, candles] = await Promise.all([
-        quoteRes.json(),
-        profileRes.json(),
-        candleRes.json(),
-      ]);
-
-      const history = (candles.c || []).map((price: number, i: number) => ({
-        date: new Date(candles.t[i] * 1000).toISOString().split('T')[0],
-        price,
-      }));
+      const price = (quote as any).regularMarketPrice ?? 0;
+      if (!price) throw new Error(`No price data for ${ticker}`);
 
       res.json({
         ticker,
-        price: quote.c || 0,
-        change: quote.d || 0,
-        changePercent: quote.dp || 0,
-        sector: profile.finnhubIndustry || 'Other',
-        history,
+        price,
+        change: (quote as any).regularMarketChange ?? 0,
+        changePercent: (quote as any).regularMarketChangePercent ?? 0,
+        sector: (quote as any).sector ?? 'Other',
+        history: (history as any[])
+          .filter((q: any) => q.close != null)
+          .map((q: any) => ({
+            date: new Date(q.date).toISOString().split('T')[0],
+            price: q.close,
+          })),
       });
     } catch (e) {
-      console.error('Finnhub error:', e);
-      res.status(500).json({ error: 'Failed to fetch from Finnhub' });
+      console.error('Yahoo Finance quote error:', e);
+      res.status(500).json({ error: 'Failed to fetch stock data' });
     }
   });
 
@@ -115,7 +111,7 @@ async function startServer() {
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3-flash-preview',
         contents: `Provide realistic stock data for ${ticker} based on recent market trends.
 Return ONLY a JSON object with these fields:
 - ticker: string
@@ -160,7 +156,7 @@ Return ONLY a JSON object with these fields:
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3-flash-preview',
         contents: `${personaPrompts[persona] || personaPrompts.buffett}
 
 Analyze this portfolio: ${holdingsStr}.
@@ -172,6 +168,81 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     } catch (e) {
       console.error('Gemini insights error:', e);
       res.status(500).json({ error: 'Failed to generate insights' });
+    }
+  });
+
+  // ─── Agent: create chat session ────────────────────────────────────────────
+  app.post('/api/agent/session', async (req, res) => {
+    const { uid, persona = 'buffett' } = req.body as { uid: string; persona?: string };
+    if (!uid) return res.status(400).json({ error: 'uid required' });
+    try {
+      const sessionId = await createChatSession(uid, persona);
+      res.json({ sessionId });
+    } catch (e) {
+      console.error('Session creation error:', e);
+      res.status(500).json({ error: 'Failed to create session' });
+    }
+  });
+
+  // ─── Agent: portfolio risk report (SSE) ───────────────────────────────────
+  app.post('/api/agent/report', async (req, res) => {
+    const { uid, holdings, cashBalance, persona = 'buffett' } = req.body as {
+      uid: string;
+      holdings: Holding[];
+      cashBalance: number;
+      persona?: string;
+    };
+
+    if (!uid || !holdings) return res.status(400).json({ error: 'uid and holdings required' });
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    try {
+      for await (const event of runPortfolioReport(uid, holdings, cashBalance, persona)) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+    } catch (e) {
+      console.error('Report agent error:', e);
+      res.write(`data: ${JSON.stringify({ error: 'Report generation failed' })}\n\n`);
+    } finally {
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  });
+
+  // ─── Agent: research chat (SSE) ───────────────────────────────────────────
+  app.post('/api/agent/chat', async (req, res) => {
+    const { uid, sessionId, message, holdings, cashBalance, persona = 'buffett' } = req.body as {
+      uid: string;
+      sessionId: string;
+      message: string;
+      holdings: Holding[];
+      cashBalance: number;
+      persona?: string;
+    };
+
+    if (!uid || !sessionId || !message) {
+      return res.status(400).json({ error: 'uid, sessionId, and message required' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    try {
+      for await (const event of runChat(uid, sessionId, message, holdings, cashBalance, persona)) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+    } catch (e) {
+      console.error('Chat agent error:', e);
+      res.write(`data: ${JSON.stringify({ error: 'Agent failed to respond' })}\n\n`);
+    } finally {
+      res.write('data: [DONE]\n\n');
+      res.end();
     }
   });
 

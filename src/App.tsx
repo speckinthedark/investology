@@ -6,7 +6,6 @@ import { Toaster, toast } from 'sonner';
 import { useAuth } from './hooks/useAuth';
 import { usePortfolio } from './hooks/usePortfolio';
 import { fetchStockData, fetchPriceHistory } from './services/stockService';
-import { fetchPortfolioInsights } from './services/geminiService';
 
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -40,9 +39,7 @@ export default function App() {
   const [stockPrices, setStockPrices] = useState<Record<string, StockData>>({});
   const [priceHistory, setPriceHistory] = useState<PriceHistory>({});
   const [isPriceHistoryLoading, setIsPriceHistoryLoading] = useState(false);
-  const [insights, setInsights] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isInsightsLoading, setIsInsightsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
   const [showCashModal, setShowCashModal] = useState(false);
@@ -85,20 +82,8 @@ export default function App() {
     }
   };
 
-  const refreshInsights = async (persona = selectedPersona) => {
-    if (holdings.length === 0) return;
-    setIsInsightsLoading(true);
-    try {
-      const text = await fetchPortfolioInsights(holdings, persona);
-      setInsights(text);
-    } finally {
-      setIsInsightsLoading(false);
-    }
-  };
-
   const handlePersonaChange = async (persona: typeof selectedPersona) => {
     await updatePersona(persona);
-    refreshInsights(persona);
   };
 
   const totalValue = holdings.reduce((acc, h) => acc + h.shares * (stockPrices[h.ticker]?.price ?? h.averagePrice), 0);
@@ -284,11 +269,11 @@ export default function App() {
             )}
             {activeTab === 'deep-dive' && (
               <InsightsTab
-                insights={insights}
-                isLoading={isInsightsLoading}
+                uid={user.uid}
+                holdings={holdings}
+                cashBalance={cashBalance}
                 selectedPersona={selectedPersona}
                 onPersonaChange={handlePersonaChange}
-                onRefresh={() => refreshInsights()}
               />
             )}
           </motion.div>

@@ -1,0 +1,12 @@
+# Inherit .gitignore rules then carve out exceptions below
+#!include:.gitignore
+
+# Firebase web config is not a secret — include it in the build
+!firebase-applet-config.json
+
+# Never send these to Cloud Build
+.env
+node_modules
+dist
+docs
+sample_reports
