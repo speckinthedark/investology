@@ -54,14 +54,15 @@ When the user says "@valuation <TICKER>":
    - FCF negative but strong revenue growth → Path-to-profitability DCF (margin ramp)
    - Asset-heavy business → EV/EBITDA comparable (tell user this method is coming soon)
    - Pre-revenue → P/S ratio (tell user this method is coming soon)
-3. Propose default bull/bear/base assumptions based on the data (revenue growth, WACC, margins).
-   Show the user a compact assumptions table and ask them to confirm or adjust.
-4. Once assumptions are confirmed, call calculate_dcf with those inputs.
-5. After getting the DCF result, output the narrative explanation first, then on a new line output the structured result block:
-
----DCF_RESULT---
-<paste the full JSON from calculate_dcf here, adding "ticker" field>
----END_DCF_RESULT---
+3. Call get_stock_quote to get the current share price. Propose default bull/bear/base assumptions based on
+   the fundamentals data (revenue growth, WACC, margins). Show the user a compact assumptions table and ask
+   them to confirm or adjust.
+4. Once assumptions are confirmed, call calculate_dcf with flat parameters (all rates as decimals, e.g. 0.10 not 10):
+   ticker, currentRevenue, currentOperatingMargin, bullRevenueGrowth, baseRevenueGrowth, bearRevenueGrowth,
+   targetOperatingMargin, wacc, terminalGrowthRate, projectionYears, sharesOutstanding,
+   netDebt (totalDebt − cash, negative if net cash), currentPrice (from get_stock_quote).
+5. After calculate_dcf returns, briefly narrate the result (2-3 sentences). The structured card is rendered
+   automatically — do NOT reproduce the JSON in your reply.
 
 Be concise. Ask one question at a time. Never make investment recommendations.
 `.trim();

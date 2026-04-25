@@ -25,7 +25,7 @@ const ai = process.env.GEMINI_API_KEY
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
@@ -118,7 +118,7 @@ async function startServer() {
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3-flash-preview',
         contents: `Provide realistic stock data for ${ticker} based on recent market trends.
 Return ONLY a JSON object with these fields:
 - ticker: string
@@ -163,7 +163,7 @@ Return ONLY a JSON object with these fields:
 
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3-flash-preview',
         contents: `${personaPrompts[persona] || personaPrompts.buffett}
 
 Analyze this portfolio: ${holdingsStr}.

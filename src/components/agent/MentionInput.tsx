@@ -32,6 +32,10 @@ export default function MentionInput({ onSend, disabled }: Props) {
       submit();
     }
     if (e.key === 'Escape') setShowPopover(false);
+    if (e.key === 'Tab' && showPopover) {
+      e.preventDefault();
+      insertMention(AGENTS[0].mention);
+    }
   };
 
   const insertMention = (mention: string) => {
@@ -94,7 +98,7 @@ export default function MentionInput({ onSend, disabled }: Props) {
           <Send className="w-3.5 h-3.5" />
         </button>
       </div>
-      <p className="text-[10px] text-zinc-700 mt-1.5 px-1">Enter to send · Shift+Enter for new line · Type @ to invoke an agent</p>
+      <p className="text-[10px] text-zinc-700 mt-1.5 px-1">Enter to send · Shift+Enter for new line · Type @ to invoke an agent · Tab to autocomplete</p>
     </div>
   );
 }

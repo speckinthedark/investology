@@ -1,7 +1,7 @@
+import { z } from 'zod';
 import { LlmAgent, Runner, InMemorySessionService, FunctionTool, GOOGLE_SEARCH } from '@google/adk';
 import type { Holding } from '../src/types.js';
 import { getFundamentals, getStockQuote, getPriceHistory, calculateDcf } from './tools.js';
-import type { DCFAssumptions } from './tools.js';
 import { ORCHESTRATOR_PROMPT, PORTFOLIO_RISK_PROMPT, VALUATION_PROMPT, NEWS_PROMPT } from './prompts.js';
 
 // ─── Tool wrappers ─────────────────────────────────────────────────────────────
@@ -34,12 +34,44 @@ function makePriceHistoryTool() {
   });
 }
 
+const dcfSchema = z.object({
+  ticker: z.string().describe('Stock ticker symbol'),
+  currentRevenue: z.number().describe('Annual revenue in dollars'),
+  currentOperatingMargin: z.number().describe('Current operating margin as decimal (e.g. 0.30)'),
+  bullRevenueGrowth: z.number().describe('Bull case annual revenue growth as decimal (e.g. 0.25)'),
+  baseRevenueGrowth: z.number().describe('Base case annual revenue growth as decimal'),
+  bearRevenueGrowth: z.number().describe('Bear case annual revenue growth as decimal'),
+  targetOperatingMargin: z.number().describe('Long-run target operating margin as decimal'),
+  wacc: z.number().describe('WACC as decimal (e.g. 0.09 for 9%)'),
+  terminalGrowthRate: z.number().describe('Terminal growth rate as decimal (e.g. 0.025)'),
+  projectionYears: z.number().describe('Number of projection years (5 or 10)'),
+  sharesOutstanding: z.number().describe('Total shares outstanding'),
+  netDebt: z.number().describe('Total debt minus cash in dollars (negative = net cash)'),
+  currentPrice: z.number().describe('Current stock price in dollars from get_stock_quote'),
+});
+
 function makeCalculateDcfTool() {
   return new FunctionTool({
     name: 'calculate_dcf',
-    description: 'Calculate DCF valuation with bull/base/bear scenarios. Returns implied share prices.',
-    execute: async ({ ticker, assumptions }: { ticker: string; assumptions: DCFAssumptions }) =>
-      calculateDcf(ticker, assumptions),
+    description: 'Calculate DCF valuation with bull/base/bear scenarios. All rates must be decimals.',
+    parameters: dcfSchema,
+    execute: async ({
+      ticker, currentRevenue, currentOperatingMargin,
+      bullRevenueGrowth, baseRevenueGrowth, bearRevenueGrowth,
+      targetOperatingMargin, wacc, terminalGrowthRate,
+      projectionYears, sharesOutstanding, netDebt, currentPrice,
+    }) => calculateDcf(ticker, {
+      currentRevenue,
+      currentOperatingMargin,
+      revenueGrowthRates: { bull: bullRevenueGrowth, base: baseRevenueGrowth, bear: bearRevenueGrowth },
+      targetOperatingMargin,
+      wacc,
+      terminalGrowthRate,
+      projectionYears,
+      sharesOutstanding,
+      netDebt,
+      currentPrice,
+    }),
   });
 }
 
@@ -48,34 +80,36 @@ function makeCalculateDcfTool() {
 function buildNewsAgent() {
   return new LlmAgent({
     name: 'news_agent',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     instruction: NEWS_PROMPT,
     tools: [makeFundamentalsTool(), makeStockQuoteTool(), GOOGLE_SEARCH],
+    generateContentConfig: { toolConfig: { includeServerSideToolInvocations: true } },
   });
 }
 
 function buildValuationAgent() {
   return new LlmAgent({
     name: 'valuation_agent',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     instruction: VALUATION_PROMPT,
-    tools: [makeFundamentalsTool(), makePriceHistoryTool(), makeCalculateDcfTool()],
+    tools: [makeFundamentalsTool(), makeStockQuoteTool(), makePriceHistoryTool(), makeCalculateDcfTool()],
   });
 }
 
 function buildPortfolioRiskAgent() {
   return new LlmAgent({
     name: 'portfolio_risk_agent',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     instruction: PORTFOLIO_RISK_PROMPT,
     tools: [makeFundamentalsTool(), makeStockQuoteTool(), GOOGLE_SEARCH],
+    generateContentConfig: { toolConfig: { includeServerSideToolInvocations: true } },
   });
 }
 
 function buildOrchestrator(persona: string): LlmAgent {
   return new LlmAgent({
     name: 'orchestrator',
-    model: 'gemini-2.0-flash',
+    model: 'gemini-3-flash-preview',
     instruction: ORCHESTRATOR_PROMPT(persona),
     subAgents: [buildNewsAgent(), buildValuationAgent()],
   });
@@ -180,8 +214,8 @@ export async function* runChat(
   const orchestrator = buildOrchestrator(persona);
   const runner = new Runner({ appName: APP_NAME, agent: orchestrator, sessionService });
 
-  let fullText = '';
   let activeAgent = 'orchestrator';
+  let dcfResult: unknown = null;
 
   for await (const event of runner.runAsync({
     userId: uid,
@@ -194,23 +228,27 @@ export async function* runChat(
     const author = event.author;
     if (author) activeAgent = author;
 
-    const parts = (event.content?.parts ?? []) as Array<{ text?: string }>;
+    const parts = (event.content?.parts ?? []) as Array<{
+      text?: string;
+      functionResponse?: { name: string; response: unknown };
+    }>;
+
     for (const part of parts) {
+      // Capture calculate_dcf tool result directly from the event stream — more reliable
+      // than asking the LLM to faithfully copy it into a delimiter block.
+      if (part.functionResponse?.name === 'calculate_dcf') {
+        dcfResult = part.functionResponse.response;
+      }
+
       if (part.text) {
-        fullText += part.text;
-        yield { text: part.text, agent: activeAgent };
+        // Strip any ---DCF_RESULT--- delimiter block the LLM may have added before yielding
+        const cleaned = part.text.replace(/---DCF_RESULT---[\s\S]*?---END_DCF_RESULT---/g, '').trimEnd();
+        if (cleaned) yield { text: cleaned, agent: activeAgent };
       }
     }
   }
 
-  // Detect DCF result delimiter in full response
-  const dcfMatch = fullText.match(/---DCF_RESULT---\s*([\s\S]*?)\s*---END_DCF_RESULT---/);
-  if (dcfMatch) {
-    try {
-      const dcfData = JSON.parse(dcfMatch[1]);
-      yield { structured: { type: 'dcf', ...dcfData }, agent: 'valuation_agent' };
-    } catch {
-      // ignore parse errors
-    }
+  if (dcfResult) {
+    yield { structured: { type: 'dcf', ...(dcfResult as Record<string, unknown>) }, agent: 'valuation_agent' };
   }
 }
