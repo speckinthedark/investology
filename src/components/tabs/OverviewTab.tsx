@@ -345,15 +345,15 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
             {filteredSectors.length > 0 ? (
               <div className="flex flex-col md:flex-row items-center gap-10">
                 {/* Donut chart */}
-                <div className="relative shrink-0" style={{ width: 240, height: 240 }}>
+                <div className="relative shrink-0" style={{ width: 300, height: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={filteredSectors}
                         cx="50%"
                         cy="50%"
-                        innerRadius={78}
-                        outerRadius={112}
+                        innerRadius={98}
+                        outerRadius={140}
                         paddingAngle={3}
                         dataKey="value"
                         stroke="none"
