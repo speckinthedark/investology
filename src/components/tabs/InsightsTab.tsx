@@ -1,16 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Persona, Holding, ChatSession, StoredMessage, StoredReport } from '../../types';
-import { cn } from '../../lib/utils';
+import { Holding, ChatSession, StoredMessage, StoredReport, StockData } from '../../types';
 import { useChatSessions } from '../../hooks/useChatSessions';
 import SessionSidebar from '../agent/SessionSidebar';
 import PortfolioRiskReport, { ReportData } from '../agent/PortfolioRiskReport';
 import AgentChat from '../agent/AgentChat';
-
-const PERSONAS: { id: Persona; label: string }[] = [
-  { id: 'buffett', label: 'Buffett / Munger' },
-  { id: 'lynch',   label: 'Peter Lynch' },
-];
 
 interface ActiveSession {
   session: ChatSession;
@@ -21,23 +15,22 @@ interface ActiveSession {
 interface Props {
   uid: string;
   holdings: Holding[];
+  stockPrices: Record<string, StockData>;
   cashBalance: number;
-  selectedPersona: Persona;
-  onPersonaChange: (p: Persona) => void;
 }
 
-async function createAdkSession(uid: string, persona: string): Promise<string> {
+async function createAdkSession(uid: string): Promise<string> {
   const res = await fetch('/api/agent/session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uid, persona }),
+    body: JSON.stringify({ uid }),
   });
   if (!res.ok) throw new Error(`Failed to create agent session: ${res.status}`);
   const data = await res.json();
   return data.sessionId as string;
 }
 
-export default function InsightsTab({ uid, holdings, cashBalance, selectedPersona, onPersonaChange }: Props) {
+export default function InsightsTab({ uid, holdings, stockPrices, cashBalance }: Props) {
   const { sessions, sessionError, createSession, loadSessionMessages, appendMessage, setSessionTitle, saveReport, loadReport } =
     useChatSessions(uid);
 
@@ -70,7 +63,7 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
     try {
       const [messages, adkSessionId] = await Promise.all([
         loadSessionMessages(session.id),
-        createAdkSession(uid, session.persona),
+        createAdkSession(uid),
       ]);
       setActiveSession({ session, messages, adkSessionId });
       setActiveView(session.id);
@@ -86,8 +79,8 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
     setSessionCreateError(null);
     try {
       const [session, adkSessionId] = await Promise.all([
-        createSession(selectedPersona),
-        createAdkSession(uid, selectedPersona),
+        createSession(),
+        createAdkSession(uid),
       ]);
       setActiveSession({ session, messages: [], adkSessionId });
       setActiveView(session.id);
@@ -138,25 +131,6 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
 
       {/* Main panel */}
       <div className="flex-1 min-w-0 flex flex-col gap-6">
-        {/* Persona selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600 mr-2">Analysis lens</span>
-          {PERSONAS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => onPersonaChange(p.id)}
-              className={cn(
-                'px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border',
-                selectedPersona === p.id
-                  ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-transparent border-zinc-700 text-zinc-500 hover:border-zinc-500 hover:text-white',
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-
         {/* Loading state while report cache loads */}
         {activeView === 'report' && reportLoading && (
           <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
@@ -170,8 +144,8 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
           <PortfolioRiskReport
             uid={uid}
             holdings={holdings}
+            stockPrices={stockPrices}
             cashBalance={cashBalance}
-            persona={selectedPersona}
             initialReport={cachedReport ? (cachedReport.data as unknown as ReportData) : null}
             initialGeneratedAt={cachedReport?.generatedAt ?? null}
             onReportGenerated={handleReportGenerated}
@@ -200,7 +174,6 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
             uid={uid}
             holdings={holdings}
             cashBalance={cashBalance}
-            persona={activeSession.session.persona}
             session={activeSession.session}
             initialMessages={activeSession.messages}
             adkSessionId={activeSession.adkSessionId}

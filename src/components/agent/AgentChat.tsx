@@ -2,13 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import AgentMessage, { ChatMessage } from './AgentMessage';
 import MentionInput from './MentionInput';
 import { streamAgent } from '../../hooks/useAgentStream';
-import { Holding, Persona, ChatSession, StoredMessage } from '../../types';
+import { Holding, ChatSession, StoredMessage } from '../../types';
 
 interface Props {
   uid: string;
   holdings: Holding[];
   cashBalance: number;
-  persona: Persona;
   session: ChatSession;
   initialMessages: StoredMessage[];
   adkSessionId: string;
@@ -39,7 +38,6 @@ export default function AgentChat({
   uid,
   holdings,
   cashBalance,
-  persona,
   session,
   initialMessages,
   adkSessionId,
@@ -83,7 +81,7 @@ export default function AgentChat({
 
     await streamAgent(
       '/api/agent/chat',
-      { uid, sessionId, message: text, holdings, cashBalance, persona },
+      { uid, sessionId, message: text, holdings, cashBalance },
       (event) => {
         if (event.newSessionId) {
           setSessionId(event.newSessionId);

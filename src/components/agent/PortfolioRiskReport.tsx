@@ -37,8 +37,8 @@ const SEVERITY_COLOR: Record<string, string> = {
 interface Props {
   uid: string;
   holdings: Holding[];
+  stockPrices: Record<string, unknown>;
   cashBalance: number;
-  persona: string;
   initialReport: ReportData | null;
   initialGeneratedAt: Date | null;
   onReportGenerated: (data: ReportData) => void;
@@ -47,8 +47,8 @@ interface Props {
 export default function PortfolioRiskReport({
   uid,
   holdings,
+  stockPrices,
   cashBalance,
-  persona,
   initialReport,
   initialGeneratedAt,
   onReportGenerated,
@@ -66,7 +66,7 @@ export default function PortfolioRiskReport({
 
     await streamAgent(
       '/api/agent/report',
-      { uid, holdings, cashBalance, persona },
+      { uid, holdings, stockPrices, cashBalance },
       (event) => {
         if (event.error) { setError(event.error); return; }
         if (event.structured) {
