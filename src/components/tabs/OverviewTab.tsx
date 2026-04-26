@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   ResponsiveContainer, Treemap, Tooltip, PieChart, Pie, Cell, Sector, LineChart, Line,
 } from 'recharts';
@@ -501,7 +501,10 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                 return (
                   <tr key={h.ticker} className="hover:bg-zinc-800/40 transition-colors group">
                     <td className="px-6 py-5">
-                      <div className="font-black text-base tracking-tighter text-white">{h.ticker}</div>
+                      <div className="flex items-center gap-3">
+                        <TickerLogo ticker={h.ticker} />
+                        <div className="font-black text-base tracking-tighter text-white">{h.ticker}</div>
+                      </div>
                     </td>
                     <td className="px-6 py-5">
                       <span className="text-xs font-bold text-zinc-500 uppercase tracking-wide">{p?.sector ?? '—'}</span>
@@ -572,5 +575,26 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
         </div>
       </div>
     </div>
+  );
+}
+
+function TickerLogo({ ticker }: { ticker: string }) {
+  const [failed, setFailed] = useState(false);
+  const onError = useCallback(() => setFailed(true), []);
+
+  if (failed) {
+    return (
+      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-black text-zinc-300 shrink-0">
+        {ticker.slice(0, 2)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={`https://assets.parqet.com/logos/symbol/${ticker}`}
+      alt={ticker}
+      onError={onError}
+      className="w-8 h-8 rounded-full object-contain bg-zinc-800 shrink-0"
+    />
   );
 }
