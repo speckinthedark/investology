@@ -134,6 +134,18 @@ export default function PerformanceTab({
     [chartData, sortedTxs],
   );
 
+  // Pre-index buy/sell transactions by month for O(1) marker lookup
+  const txsByMonth = useMemo(() => {
+    const map: Record<string, Transaction[]> = {};
+    for (const tx of sortedTxs) {
+      if (tx.type !== 'buy' && tx.type !== 'sell') continue;
+      const ym = tx.timestamp.slice(0, 7);
+      if (!map[ym]) map[ym] = [];
+      map[ym].push(tx);
+    }
+    return map;
+  }, [sortedTxs]);
+
   // Period-filtered data for the area chart
   const periodData = useMemo(() => {
     if (period === 'all' || chartData.length === 0) return chartData;
@@ -282,7 +294,33 @@ export default function PerformanceTab({
                   stroke="#a78bfa"
                   strokeWidth={2.5}
                   fill="url(#portfolioGrad)"
-                  dot={false}
+                  dot={(dotProps: any) => {
+                    const { cx, cy, payload } = dotProps as {
+                      cx: number;
+                      cy: number;
+                      payload: { date: string };
+                    };
+                    const txs = txsByMonth[payload.date.slice(0, 7)] ?? [];
+                    if (txs.length === 0) return <g />;
+                    return (
+                      <g>
+                        {txs.map((tx, idx) => {
+                          const offset = (idx - (txs.length - 1) / 2) * 14;
+                          return (
+                            <circle
+                              key={idx}
+                              cx={cx}
+                              cy={cy + offset}
+                              r={5}
+                              fill={tx.type === 'buy' ? '#34d399' : '#f87171'}
+                              stroke="#09090b"
+                              strokeWidth={1.5}
+                            />
+                          );
+                        })}
+                      </g>
+                    );
+                  }}
                   activeDot={{ r: 5, fill: '#a78bfa', stroke: '#09090b', strokeWidth: 2 }}
                 />
               </AreaChart>
