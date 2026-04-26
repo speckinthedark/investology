@@ -38,6 +38,33 @@ const fmt$ = (v: number) => {
   return `$${v.toFixed(0)}`;
 };
 
+function modifiedDietz(
+  vStart: number,
+  vEnd: number,
+  txs: Transaction[],
+  yearMonth: string,
+): number {
+  const [y, m] = yearMonth.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+
+  let cf = 0;
+  let weightedCf = 0;
+
+  for (const tx of txs) {
+    if (tx.type !== 'buy' && tx.type !== 'sell') continue;
+    const amount = (tx.shares ?? 0) * (tx.price ?? 0);
+    const sign = tx.type === 'buy' ? 1 : -1;
+    const day = new Date(tx.timestamp).getDate();
+    const w = (daysInMonth - day) / daysInMonth;
+    cf += sign * amount;
+    weightedCf += sign * amount * w;
+  }
+
+  const denominator = vStart + weightedCf;
+  if (denominator <= 0) return 0;
+  return ((vEnd - vStart - cf) / denominator) * 100;
+}
+
 export default function PerformanceTab({
   transactions, priceHistory, isPriceHistoryLoading, totalStockValue, totalCostBasis,
 }: Props) {
@@ -92,15 +119,19 @@ export default function PerformanceTab({
     return [...monthlyValues, nowPoint];
   }, [monthlyValues, totalStockValue]);
 
-  // Month-over-month return %
+  // Month-over-month return % — Modified Dietz TWR
   const monthlyReturns = useMemo(
     () =>
       chartData.slice(1).map((m, i) => {
         const prev = chartData[i];
-        const pct = prev.value > 0 ? ((m.value - prev.value) / prev.value) * 100 : 0;
-        return { label: m.label, date: m.date, returnPct: pct };
+        const yearMonth = m.date.slice(0, 7);
+        const txsInMonth = sortedTxs.filter(
+          (tx) => tx.timestamp.slice(0, 7) === yearMonth,
+        );
+        const returnPct = modifiedDietz(prev.value, m.value, txsInMonth, yearMonth);
+        return { label: m.label, date: m.date, returnPct };
       }),
-    [chartData],
+    [chartData, sortedTxs],
   );
 
   // Period-filtered data for the area chart
