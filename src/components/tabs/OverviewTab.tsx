@@ -218,6 +218,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Treemap */}
       <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
@@ -439,6 +440,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
           </div>
         );
       })()}
+      </div>
 
       {/* Holdings Table */}
       <div className="bg-zinc-900 rounded-[32px] border border-zinc-800 overflow-hidden">
