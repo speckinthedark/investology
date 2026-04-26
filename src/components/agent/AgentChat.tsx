@@ -50,7 +50,7 @@ export default function AgentChat({
   const [sessionId, setSessionId] = useState<string>(adkSessionId);
   const [isStreaming, setIsStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const isFirstMessage = useRef(initialMessages.length === 0);
+  const isFirstMessage = useRef(session.title === 'New Chat');
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -79,6 +79,7 @@ export default function AgentChat({
     let finalText = '';
     let finalAgent: string | undefined;
     let finalStructured: Record<string, unknown> | undefined;
+    let hadError = false;
 
     await streamAgent(
       '/api/agent/chat',
@@ -89,6 +90,7 @@ export default function AgentChat({
           return;
         }
         if (event.error) {
+          hadError = true;
           setMessages((prev) =>
             prev.map((m) => m.id === agentMsgId ? { ...m, text: `Error: ${event.error}`, streaming: false } : m),
           );
@@ -119,8 +121,8 @@ export default function AgentChat({
           prev.map((m) => m.id === agentMsgId ? { ...m, streaming: false } : m),
         );
         setIsStreaming(false);
-        // Persist complete agent message
-        if (finalText || finalStructured) {
+        // Persist complete agent message (skip if the stream errored)
+        if (!hadError && (finalText || finalStructured)) {
           onMessageAppend('agent', finalText, finalAgent, finalStructured).catch(console.error);
         }
       },
