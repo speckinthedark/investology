@@ -89,7 +89,8 @@ export default function PortfolioRiskReport({
     if (!initialReport && holdings.length > 0) {
       runReport();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialReport]);
 
   return (
     <div className="bg-zinc-900 rounded-[32px] border border-zinc-800 p-8">
