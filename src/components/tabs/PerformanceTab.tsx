@@ -1,12 +1,13 @@
-import { useMemo, useState, ElementType } from 'react';
+import { useMemo, useState, useEffect, ElementType } from 'react';
 import {
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell,
-  CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine,
+  ResponsiveContainer, AreaChart, Area, ComposedChart, Bar, Cell,
+  CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, ReferenceDot, Line,
 } from 'recharts';
 import { format } from 'date-fns';
 import { TrendingUp, TrendingDown, Calendar, BarChart3 } from 'lucide-react';
 import { Transaction, PriceHistory } from '../../types';
 import { cn } from '../../lib/utils';
+import { fetchPriceHistory } from '../../services/stockService';
 
 interface Props {
   transactions: Transaction[];
@@ -17,9 +18,15 @@ interface Props {
 }
 
 type Period = '6m' | '1y' | 'all';
+type Benchmark = 'SPY' | 'QQQ';
 
 const GRID = '#27272a';
 const TICK = '#71717a';
+
+const BENCHMARK_META: Record<Benchmark, { label: string; color: string }> = {
+  SPY: { label: 'S&P 500', color: '#f59e0b' },
+  QQQ: { label: 'NDX 100', color: '#60a5fa' },
+};
 
 function getSharesAt(txs: Transaction[], cutoff: Date): Record<string, number> {
   const shares: Record<string, number> = {};
@@ -65,10 +72,36 @@ function modifiedDietz(
   return ((vEnd - vStart - cf) / denominator) * 100;
 }
 
+function computeBenchmarkReturns(
+  history: { date: string; close: number }[],
+  targetMonths: { date: string }[],
+): Record<string, number> {
+  const byMonth: Record<string, number> = {};
+  for (const h of history) {
+    byMonth[h.date.slice(0, 7)] = h.close;
+  }
+  const result: Record<string, number> = {};
+  for (const m of targetMonths) {
+    const ym = m.date.slice(0, 7);
+    const [y, mo] = ym.split('-').map(Number);
+    const prevYm = mo === 1
+      ? `${y - 1}-12`
+      : `${y}-${String(mo - 1).padStart(2, '0')}`;
+    const end = byMonth[ym];
+    const start = byMonth[prevYm];
+    if (end != null && start != null && start > 0) {
+      result[ym] = ((end - start) / start) * 100;
+    }
+  }
+  return result;
+}
+
 export default function PerformanceTab({
   transactions, priceHistory, isPriceHistoryLoading, totalStockValue, totalCostBasis,
 }: Props) {
   const [period, setPeriod] = useState<Period>('1y');
+  const [activeBenchmarks, setActiveBenchmarks] = useState<Set<Benchmark>>(new Set());
+  const [benchmarkHistory, setBenchmarkHistory] = useState<PriceHistory>({});
 
   const simpleReturn = totalCostBasis > 0 ? ((totalStockValue - totalCostBasis) / totalCostBasis) * 100 : 0;
 
@@ -86,9 +119,7 @@ export default function PerformanceTab({
 
     return sorted.map((dateStr) => {
       const [y, m] = dateStr.split('-').map(Number);
-      // Last day of this month: day 0 of the next month
       const endOfMonth = new Date(y, m, 0, 23, 59, 59);
-
       const shares = getSharesAt(sortedTxs, endOfMonth);
 
       let equity = 0;
@@ -106,12 +137,11 @@ export default function PerformanceTab({
     });
   }, [sortedTxs, priceHistory]);
 
-  // Append current real-time value as the "Now" point if not already this month
+  // Append current real-time value as the "Now" point
   const chartData = useMemo(() => {
     if (monthlyValues.length === 0) return [];
     const currentMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
     const last = monthlyValues[monthlyValues.length - 1];
-    // Replace partial current-month Yahoo point with live value, or append if missing
     const nowPoint = { date: new Date().toISOString().split('T')[0], label: 'Now', value: totalStockValue };
     if (last.date.startsWith(currentMonth)) {
       return [...monthlyValues.slice(0, -1), nowPoint];
@@ -149,7 +179,7 @@ export default function PerformanceTab({
   // Period-filtered data for the area chart
   const periodData = useMemo(() => {
     if (period === 'all' || chartData.length === 0) return chartData;
-    const n = period === '6m' ? 7 : 13; // +1 so we show 6/12 full bars
+    const n = period === '6m' ? 7 : 13;
     return chartData.slice(-n);
   }, [chartData, period]);
 
@@ -158,6 +188,39 @@ export default function PerformanceTab({
     const n = period === '6m' ? 6 : 12;
     return monthlyReturns.slice(-n);
   }, [monthlyReturns, period]);
+
+  // Fetch benchmark history the first time a benchmark is toggled on
+  useEffect(() => {
+    const toFetch = (['SPY', 'QQQ'] as Benchmark[]).filter(
+      (t) => activeBenchmarks.has(t) && !benchmarkHistory[t],
+    );
+    if (toFetch.length === 0 || chartData.length === 0) return;
+    const from = chartData[0].date.slice(0, 7) + '-01';
+    fetchPriceHistory(toFetch, from).then((data) => {
+      setBenchmarkHistory((prev) => ({ ...prev, ...data }));
+    });
+  }, [activeBenchmarks, chartData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const benchmarkMonthlyReturns = useMemo(() => {
+    const result: Record<string, Record<string, number>> = {};
+    for (const ticker of ['SPY', 'QQQ'] as Benchmark[]) {
+      if (benchmarkHistory[ticker]) {
+        result[ticker] = computeBenchmarkReturns(benchmarkHistory[ticker], periodReturns);
+      }
+    }
+    return result;
+  }, [benchmarkHistory, periodReturns]);
+
+  const enrichedReturns = useMemo(() => {
+    return periodReturns.map((m) => {
+      const ym = m.date.slice(0, 7);
+      return {
+        ...m,
+        SPY: benchmarkMonthlyReturns['SPY']?.[ym],
+        QQQ: benchmarkMonthlyReturns['QQQ']?.[ym],
+      };
+    });
+  }, [periodReturns, benchmarkMonthlyReturns]);
 
   // YTD: portfolio value at end of December previous year
   const ytdReturn = useMemo(() => {
@@ -170,7 +233,6 @@ export default function PerformanceTab({
   const bestMonth  = monthlyReturns.length > 0 ? monthlyReturns.reduce((a, b) => (b.returnPct > a.returnPct ? b : a)) : null;
   const worstMonth = monthlyReturns.length > 0 ? monthlyReturns.reduce((a, b) => (b.returnPct < a.returnPct ? b : a)) : null;
   const profitableMonths = monthlyReturns.filter((m) => m.returnPct > 0).length;
-
 
   const tooltipBase = {
     contentStyle: {
@@ -193,12 +255,20 @@ export default function PerformanceTab({
     { id: 'all', label: 'All' },
   ];
 
+  const toggleBenchmark = (ticker: Benchmark) => {
+    setActiveBenchmarks((prev) => {
+      const next = new Set(prev);
+      if (next.has(ticker)) next.delete(ticker);
+      else next.add(ticker);
+      return next;
+    });
+  };
+
   return (
     <div className="flex flex-col gap-6">
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Return */}
         <StatCard
           label="Unrealized P/L"
           value={`${simpleReturn >= 0 ? '+' : ''}${simpleReturn.toFixed(2)}%`}
@@ -206,7 +276,6 @@ export default function PerformanceTab({
           positive={simpleReturn >= 0}
           icon={simpleReturn >= 0 ? TrendingUp : TrendingDown}
         />
-        {/* YTD */}
         <StatCard
           label={`YTD ${new Date().getFullYear()}`}
           value={ytdReturn != null ? `${ytdReturn >= 0 ? '+' : ''}${ytdReturn.toFixed(2)}%` : '—'}
@@ -215,7 +284,6 @@ export default function PerformanceTab({
           icon={Calendar}
           loading={isPriceHistoryLoading}
         />
-        {/* Best month */}
         <StatCard
           label="Best Month"
           value={bestMonth ? `+${bestMonth.returnPct.toFixed(2)}%` : '—'}
@@ -224,7 +292,6 @@ export default function PerformanceTab({
           icon={TrendingUp}
           loading={isPriceHistoryLoading}
         />
-        {/* Worst month */}
         <StatCard
           label="Worst Month"
           value={worstMonth ? `${worstMonth.returnPct.toFixed(2)}%` : '—'}
@@ -263,7 +330,7 @@ export default function PerformanceTab({
         ) : hasHistory ? (
           <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={periodData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <AreaChart data={periodData} margin={{ top: 16, right: 4, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%"  stopColor="#a78bfa" stopOpacity={0.22} />
@@ -288,6 +355,20 @@ export default function PerformanceTab({
                   {...tooltipBase}
                   formatter={(v: number) => [`$${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 'Portfolio Value']}
                 />
+                {/* Starting value label */}
+                {periodData.length > 0 && (
+                  <ReferenceDot
+                    x={periodData[0].label}
+                    y={periodData[0].value}
+                    r={0}
+                    label={{
+                      value: fmt$(periodData[0].value),
+                      position: 'top',
+                      style: { fontSize: 10, fontWeight: 700, fill: '#a78bfa' },
+                    }}
+                    ifOverflow="extendDomain"
+                  />
+                )}
                 <Area
                   type="monotone"
                   dataKey="value"
@@ -324,29 +405,78 @@ export default function PerformanceTab({
 
       {/* ── Monthly returns ── */}
       <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800">
-        <h3 className="text-xl font-bold italic text-white">Monthly Returns</h3>
-        <p className="text-xs text-zinc-500 mt-0.5 mb-6">Month-over-month stock portfolio change</p>
+        <div className="flex items-start justify-between mb-1">
+          <h3 className="text-xl font-bold italic text-white">Monthly Returns</h3>
+          <div className="flex items-center gap-2">
+            {(['SPY', 'QQQ'] as Benchmark[]).map((ticker) => {
+              const meta = BENCHMARK_META[ticker];
+              const active = activeBenchmarks.has(ticker);
+              return (
+                <button
+                  key={ticker}
+                  onClick={() => toggleBenchmark(ticker)}
+                  className={cn(
+                    'px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border',
+                    active
+                      ? ticker === 'SPY'
+                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+                        : 'bg-blue-500/15 border-blue-500/40 text-blue-400'
+                      : 'bg-transparent border-zinc-700 text-zinc-600 hover:text-zinc-400 hover:border-zinc-600',
+                  )}
+                >
+                  {meta.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <p className="text-xs text-zinc-500 mb-6">Month-over-month change · toggle benchmarks to compare</p>
 
         {isPriceHistoryLoading ? (
           <ChartSkeleton height={192} />
         ) : periodReturns.length > 0 ? (
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={periodReturns} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+              <ComposedChart data={enrichedReturns} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: TICK }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 700, fill: TICK }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} />
                 <ReferenceLine y={0} stroke="#3f3f46" strokeWidth={1} />
                 <Tooltip
                   {...tooltipBase}
-                  formatter={(v: number) => [`${v >= 0 ? '+' : ''}${v.toFixed(2)}%`, 'Monthly Return']}
+                  formatter={(v: number, name: string) => {
+                    const labels: Record<string, string> = { returnPct: 'Portfolio', SPY: 'S&P 500', QQQ: 'NDX 100' };
+                    return [`${v >= 0 ? '+' : ''}${v.toFixed(2)}%`, labels[name] ?? name];
+                  }}
                 />
                 <Bar dataKey="returnPct" radius={[3, 3, 3, 3]} maxBarSize={36}>
-                  {periodReturns.map((d, i) => (
+                  {enrichedReturns.map((d, i) => (
                     <Cell key={i} fill={d.returnPct >= 0 ? '#34d399' : '#f87171'} />
                   ))}
                 </Bar>
-              </BarChart>
+                {activeBenchmarks.has('SPY') && (
+                  <Line
+                    type="monotone"
+                    dataKey="SPY"
+                    stroke={BENCHMARK_META.SPY.color}
+                    strokeWidth={1.5}
+                    dot={false}
+                    activeDot={{ r: 3, fill: BENCHMARK_META.SPY.color }}
+                    connectNulls={false}
+                  />
+                )}
+                {activeBenchmarks.has('QQQ') && (
+                  <Line
+                    type="monotone"
+                    dataKey="QQQ"
+                    stroke={BENCHMARK_META.QQQ.color}
+                    strokeWidth={1.5}
+                    dot={false}
+                    activeDot={{ r: 3, fill: BENCHMARK_META.QQQ.color }}
+                    connectNulls={false}
+                  />
+                )}
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         ) : (
