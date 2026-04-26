@@ -579,8 +579,8 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
 }
 
 const LOGO_SOURCES = (ticker: string) => [
-  `https://assets.parqet.com/logos/symbol/${ticker}`,
   `https://financialmodelingprep.com/image-stock/${ticker}.png`,
+  `https://assets.parqet.com/logos/symbol/${ticker}`,
 ];
 
 function TickerLogo({ ticker }: { ticker: string }) {
