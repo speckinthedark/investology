@@ -158,7 +158,7 @@ export default function App() {
           <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0">
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
-              <div className="text-5xl font-light tracking-tighter text-white mb-4">
+              <div className="text-6xl font-bold tracking-tighter text-white mb-4">
                 ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <div className="flex items-center gap-8">
