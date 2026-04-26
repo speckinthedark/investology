@@ -301,23 +301,14 @@ export default function PerformanceTab({
                       payload: { date: string };
                     };
                     const txs = txsByMonth[payload.date.slice(0, 7)] ?? [];
-                    if (txs.length === 0) return <g />;
+                    const hasBuy  = txs.some((tx) => tx.type === 'buy');
+                    const hasSell = txs.some((tx) => tx.type === 'sell');
+                    if (!hasBuy && !hasSell) return <g />;
+                    const both = hasBuy && hasSell;
                     return (
                       <g>
-                        {txs.map((tx, idx) => {
-                          const offset = (idx - (txs.length - 1) / 2) * 14;
-                          return (
-                            <circle
-                              key={idx}
-                              cx={cx}
-                              cy={cy + offset}
-                              r={5}
-                              fill={tx.type === 'buy' ? '#34d399' : '#f87171'}
-                              stroke="#09090b"
-                              strokeWidth={1.5}
-                            />
-                          );
-                        })}
+                        {hasBuy  && <circle cx={cx} cy={both ? cy - 8 : cy} r={5} fill="#34d399" stroke="#09090b" strokeWidth={1.5} />}
+                        {hasSell && <circle cx={cx} cy={both ? cy + 8 : cy} r={5} fill="#f87171" stroke="#09090b" strokeWidth={1.5} />}
                       </g>
                     );
                   }}
