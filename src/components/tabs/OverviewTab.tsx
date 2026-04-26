@@ -359,14 +359,14 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                         onMouseEnter={(_data: any, index: number) => setActiveIndex(index)}
                         onMouseLeave={() => setActiveIndex(null)}
                         {...({
-                          activeIndex: activeIndex ?? undefined,
-                          activeShape: (props: any) => {
-                            const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+                          shape: (props: any) => {
+                            const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, index } = props;
+                            const isActive = index === activeIndex;
                             return (
                               <Sector
                                 cx={cx} cy={cy}
                                 innerRadius={innerRadius}
-                                outerRadius={outerRadius + 8}
+                                outerRadius={isActive ? outerRadius + 8 : outerRadius}
                                 startAngle={startAngle}
                                 endAngle={endAngle}
                                 fill={fill}
