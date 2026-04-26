@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ArrowUpDown, CreditCard } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
@@ -157,49 +157,49 @@ export default function App() {
           {/* Persistent KPI header */}
           <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0">
             <div>
-              <div className="text-3xl font-bold text-white tracking-tighter">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
+              <div className="text-4xl font-light tracking-tighter text-white mb-3">
                 ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className={cn('text-sm mt-0.5', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                {totalDayChange >= 0 ? '+' : ''}${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                {' '}({totalDayChangePct.toFixed(2)}%) today
+              <div className="flex items-center gap-6">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Cash</div>
+                  <div className="text-sm font-black text-blue-400">
+                    ${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Gain</div>
+                  <div className={cn('text-sm font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                    {totalPortfolioGain >= 0 ? '+' : ''}${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {' '}({totalPortfolioGainPct.toFixed(2)}%)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Today</div>
+                  <div className={cn('text-sm font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                    {totalDayChange >= 0 ? '+' : ''}${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {' '}({totalDayChangePct.toFixed(2)}%)
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-8">
-              <div className="text-right">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Cash</div>
-                <div className="text-sm font-bold text-blue-400">
-                  ${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Invested</div>
-                <div className="text-sm font-bold text-white">
-                  ${totalCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Unrealized P/L</div>
-                <div className={cn('text-sm font-bold', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                  {totalPortfolioGain >= 0 ? '+' : ''}${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  {' '}({totalPortfolioGainPct.toFixed(2)}%)
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => openModal('buy')}
-                  className="px-4 py-2 bg-white text-zinc-900 rounded-xl font-bold hover:bg-zinc-100 transition-all text-[11px] uppercase tracking-widest"
-                >
-                  Add Trade
-                </button>
-                <button
-                  onClick={() => setShowCashModal(true)}
-                  className="px-4 py-2 bg-blue-950/50 text-blue-400 border border-blue-900/50 rounded-xl font-bold hover:bg-blue-950 transition-all text-[11px] uppercase tracking-widest"
-                >
-                  Edit Cash
-                </button>
-              </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => openModal('buy')}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-white rounded-xl font-bold hover:bg-zinc-700 transition-all text-[11px] uppercase tracking-widest"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                Trade Asset
+              </button>
+              <button
+                onClick={() => setShowCashModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all text-[11px] uppercase tracking-widest"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                Edit Cash
+              </button>
             </div>
           </div>
 
