@@ -578,11 +578,17 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
   );
 }
 
-function TickerLogo({ ticker }: { ticker: string }) {
-  const [failed, setFailed] = useState(false);
-  const onError = useCallback(() => setFailed(true), []);
+const LOGO_SOURCES = (ticker: string) => [
+  `https://assets.parqet.com/logos/symbol/${ticker}`,
+  `https://financialmodelingprep.com/image-stock/${ticker}.png`,
+];
 
-  if (failed) {
+function TickerLogo({ ticker }: { ticker: string }) {
+  const [srcIndex, setSrcIndex] = useState(0);
+  const sources = LOGO_SOURCES(ticker);
+  const onError = useCallback(() => setSrcIndex((i) => i + 1), []);
+
+  if (srcIndex >= sources.length) {
     return (
       <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-black text-zinc-300 shrink-0">
         {ticker.slice(0, 2)}
@@ -591,7 +597,8 @@ function TickerLogo({ ticker }: { ticker: string }) {
   }
   return (
     <img
-      src={`https://assets.parqet.com/logos/symbol/${ticker}`}
+      key={srcIndex}
+      src={sources[srcIndex]}
       alt={ticker}
       onError={onError}
       className="w-8 h-8 rounded-full object-contain bg-zinc-800 shrink-0"
