@@ -189,17 +189,15 @@ export default function PerformanceTab({
     return monthlyReturns.slice(-n);
   }, [monthlyReturns, period]);
 
-  // Fetch benchmark history the first time a benchmark is toggled on
+  // Fetch SPY + QQQ eagerly so the $10k card and benchmark overlays always have data
   useEffect(() => {
-    const toFetch = (['SPY', 'QQQ'] as Benchmark[]).filter(
-      (t) => activeBenchmarks.has(t) && !benchmarkHistory[t],
-    );
+    const toFetch = (['SPY', 'QQQ'] as Benchmark[]).filter((t) => !benchmarkHistory[t]);
     if (toFetch.length === 0 || chartData.length === 0) return;
     const from = chartData[0].date.slice(0, 7) + '-01';
     fetchPriceHistory(toFetch, from).then((data) => {
       setBenchmarkHistory((prev) => ({ ...prev, ...data }));
     });
-  }, [activeBenchmarks, chartData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chartData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const benchmarkMonthlyReturns = useMemo(() => {
     const result: Record<string, Record<string, number>> = {};
@@ -220,6 +218,21 @@ export default function PerformanceTab({
         QQQ: benchmarkMonthlyReturns['QQQ']?.[ym],
       };
     });
+  }, [periodReturns, benchmarkMonthlyReturns]);
+
+  // $10k hypothetical: compound $10,000 through each period's monthly returns
+  const tenKCard = useMemo(() => {
+    if (periodReturns.length === 0) return null;
+    const portfolioFinal = periodReturns.reduce(
+      (acc, m) => acc * (1 + m.returnPct / 100),
+      10_000,
+    );
+    const compoundBenchmark = (ticker: Benchmark): number | null => {
+      const values = periodReturns.map((m) => benchmarkMonthlyReturns[ticker]?.[m.date.slice(0, 7)]);
+      if (values.every((r) => r == null)) return null;
+      return values.reduce((acc, r) => (r != null ? acc * (1 + r / 100) : acc), 10_000);
+    };
+    return { portfolioFinal, spyFinal: compoundBenchmark('SPY'), qqqFinal: compoundBenchmark('QQQ') };
   }, [periodReturns, benchmarkMonthlyReturns]);
 
   // YTD: portfolio value at end of December previous year
@@ -254,6 +267,8 @@ export default function PerformanceTab({
     { id: '1y',  label: '1Y' },
     { id: 'all', label: 'All' },
   ];
+
+  const periodLabel = period === '6m' ? '6 Months' : period === '1y' ? '1 Year' : 'All Time';
 
   const toggleBenchmark = (ticker: Benchmark) => {
     setActiveBenchmarks((prev) => {
@@ -300,6 +315,33 @@ export default function PerformanceTab({
           icon={TrendingDown}
           loading={isPriceHistoryLoading}
         />
+
+        {/* $10k hypothetical card — full width */}
+        <div className="col-span-2 lg:col-span-4 bg-zinc-900 rounded-[24px] p-6 border border-zinc-800">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-5">
+            $10,000 Invested · {periodLabel}
+          </div>
+          <div className="grid grid-cols-3 divide-x divide-zinc-800">
+            <TenKColumn
+              label="My Portfolio"
+              color="text-violet-400"
+              value={tenKCard?.portfolioFinal ?? null}
+              loading={isPriceHistoryLoading}
+            />
+            <TenKColumn
+              label="S&P 500"
+              color="text-amber-400"
+              value={tenKCard?.spyFinal ?? null}
+              loading={!benchmarkHistory['SPY'] && chartData.length > 0}
+            />
+            <TenKColumn
+              label="Nasdaq 100"
+              color="text-blue-400"
+              value={tenKCard?.qqqFinal ?? null}
+              loading={!benchmarkHistory['QQQ'] && chartData.length > 0}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Portfolio value area chart ── */}
@@ -513,6 +555,32 @@ function StatCard({
         <div className={cn('text-3xl font-light tracking-tighter', color)}>{value}</div>
       )}
       <div className="text-[10px] text-zinc-600 leading-snug">{sub}</div>
+    </div>
+  );
+}
+
+function TenKColumn({ label, color, value, loading }: {
+  label: string;
+  color: string;
+  value: number | null;
+  loading: boolean;
+}) {
+  const pct = value != null ? ((value - 10_000) / 10_000) * 100 : null;
+  return (
+    <div className="flex flex-col gap-2 px-5 first:pl-0 last:pr-0">
+      <div className={cn('text-[10px] font-bold uppercase tracking-widest', color)}>{label}</div>
+      {loading ? (
+        <div className="h-8 w-20 bg-zinc-800 rounded-lg animate-pulse" />
+      ) : (
+        <div className="text-2xl font-light tracking-tighter text-white">
+          {value != null ? fmt$(value) : '—'}
+        </div>
+      )}
+      {!loading && pct != null && (
+        <div className={cn('text-xs font-bold', pct >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+          {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
+        </div>
+      )}
     </div>
   );
 }
