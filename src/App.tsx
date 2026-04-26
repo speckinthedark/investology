@@ -157,27 +157,27 @@ export default function App() {
           {/* Persistent KPI header */}
           <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
-              <div className="text-4xl font-light tracking-tighter text-white mb-3">
+              <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
+              <div className="text-5xl font-light tracking-tighter text-white mb-4">
                 ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-8">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Cash</div>
-                  <div className="text-sm font-black text-blue-400">
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Cash</div>
+                  <div className="text-base font-black text-blue-400">
                     ${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Gain</div>
-                  <div className={cn('text-sm font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Total Gain</div>
+                  <div className={cn('text-base font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {totalPortfolioGain >= 0 ? '+' : ''}${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     {' '}({totalPortfolioGainPct.toFixed(2)}%)
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Today</div>
-                  <div className={cn('text-sm font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Today</div>
+                  <div className={cn('text-base font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {totalDayChange >= 0 ? '+' : ''}${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     {' '}({totalDayChangePct.toFixed(2)}%)
                   </div>
