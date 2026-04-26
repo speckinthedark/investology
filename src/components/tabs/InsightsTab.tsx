@@ -32,6 +32,7 @@ async function createAdkSession(uid: string, persona: string): Promise<string> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ uid, persona }),
   });
+  if (!res.ok) throw new Error(`Failed to create agent session: ${res.status}`);
   const data = await res.json();
   return data.sessionId as string;
 }
@@ -45,6 +46,7 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
   const [reportLoading, setReportLoading] = useState(true);
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [sessionCreateError, setSessionCreateError] = useState<string | null>(null);
 
   // Load cached report once on mount
   useEffect(() => {
@@ -60,6 +62,7 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
 
   const handleSelectSession = async (session: ChatSession) => {
     setIsCreating(true);
+    setSessionCreateError(null);
     try {
       const [messages, adkSessionId] = await Promise.all([
         loadSessionMessages(session.id),
@@ -67,6 +70,8 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
       ]);
       setActiveSession({ session, messages, adkSessionId });
       setActiveView(session.id);
+    } catch (e: any) {
+      setSessionCreateError(e?.message ?? 'Failed to open session');
     } finally {
       setIsCreating(false);
     }
@@ -74,6 +79,7 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
 
   const handleNewSession = async () => {
     setIsCreating(true);
+    setSessionCreateError(null);
     try {
       const [session, adkSessionId] = await Promise.all([
         createSession(selectedPersona),
@@ -81,6 +87,8 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
       ]);
       setActiveSession({ session, messages: [], adkSessionId });
       setActiveView(session.id);
+    } catch (e: any) {
+      setSessionCreateError(e?.message ?? 'Failed to create session');
     } finally {
       setIsCreating(false);
     }
@@ -166,6 +174,13 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
           <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
             <Loader2 className="w-4 h-4 animate-spin" />
             Starting session…
+          </div>
+        )}
+
+        {/* Session error */}
+        {activeView !== 'report' && !isCreating && sessionCreateError && (
+          <div className="flex items-center gap-2 text-rose-400 text-sm py-4">
+            <span>{sessionCreateError}</span>
           </div>
         )}
 

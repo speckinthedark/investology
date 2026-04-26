@@ -72,9 +72,10 @@ export default function SessionSidebar({
         <button
           key={s.id}
           onClick={() => onSelectSession(s)}
+          disabled={isCreating}
           aria-current={activeView === s.id ? 'page' : undefined}
           className={cn(
-            'flex items-start gap-2.5 w-full px-3 py-2.5 rounded-xl text-left transition-all border',
+            'flex items-start gap-2.5 w-full px-3 py-2.5 rounded-xl text-left transition-all border disabled:opacity-40 disabled:cursor-not-allowed',
             activeView === s.id
               ? 'bg-zinc-800 border-zinc-600 text-white'
               : 'bg-transparent border-zinc-800 hover:bg-zinc-800/60 hover:border-zinc-700 text-zinc-300',
