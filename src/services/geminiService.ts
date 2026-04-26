@@ -1,6 +1,6 @@
-import { Holding, Persona } from '../types';
+import { Holding } from '../types';
 
-export async function fetchPortfolioInsights(holdings: Holding[], persona: Persona): Promise<string> {
+export async function fetchPortfolioInsights(holdings: Holding[], persona: string): Promise<string> {
   if (holdings.length === 0) return 'Add some stocks to get AI-powered insights.';
   try {
     const res = await fetch('/api/insights', {

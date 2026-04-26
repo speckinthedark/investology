@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { RefreshCw, AlertTriangle, TrendingDown, Newspaper, Zap } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { streamAgent } from '../../hooks/useAgentStream';
-import { Holding, Persona } from '../../types';
+import { Holding } from '../../types';
 
 interface ConcentrationFlag {
   label: string;
@@ -38,7 +38,7 @@ interface Props {
   uid: string;
   holdings: Holding[];
   cashBalance: number;
-  persona: Persona;
+  persona: string;
   initialReport: ReportData | null;
   initialGeneratedAt: Date | null;
   onReportGenerated: (data: ReportData) => void;
