@@ -9,7 +9,13 @@ You have access to tools to fetch live fundamentals and recent news.
 Your output MUST be a single JSON object matching this exact schema (no other text before or after):
 {
   "portfolioHealth": {
-    "summary": "<1-2 sentence overall assessment>"
+    "summary": "<1-2 sentence overall assessment>",
+    "metrics": [
+      { "label": "Concentration", "value": "<e.g. High>", "score": 75, "tone": "loss" },
+      { "label": "Volatility", "value": "<e.g. Elevated>", "score": 65, "tone": "warn" },
+      { "label": "Diversification", "value": "<e.g. Moderate>", "score": 50, "tone": "warn" },
+      { "label": "Total Return", "value": "<e.g. Strong>", "score": 80, "tone": "gain" }
+    ]
   },
   "concentrationFlags": {
     "flags": [
@@ -33,6 +39,13 @@ Rules:
 - Only include newsRedFlags for holdings that represent >5% of portfolio value.
 - Only include genuinely notable signals — leave arrays empty if nothing significant.
 - Do NOT include any text outside the JSON object.
+- portfolioHealth.metrics MUST always contain exactly 4 items in this order: Concentration, Volatility, Diversification, Total Return.
+  - score is an integer 0-100 representing severity/strength (higher = worse for risk metrics, better for return).
+  - tone must be one of: "gain" (emerald, positive), "loss" (rose, negative/high risk), "warn" (amber, moderate concern).
+  - Concentration tone: score ≥70 → "loss", score ≥40 → "warn", else "gain".
+  - Volatility tone: score ≥70 → "loss", score ≥40 → "warn", else "gain".
+  - Diversification tone: score ≤30 → "loss", score ≤60 → "warn", else "gain".
+  - Total Return tone: score ≥60 → "gain", score ≥30 → "warn", else "loss".
 `.trim();
 
 export const VALUATION_PROMPT = `
