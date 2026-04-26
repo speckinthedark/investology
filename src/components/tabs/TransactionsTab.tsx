@@ -21,7 +21,6 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all',  label: 'ALL' },
   { id: 'buy',  label: 'BUY' },
   { id: 'sell', label: 'SELL' },
-  { id: 'cash', label: 'CASH' },
 ];
 
 const TYPE_BADGE: Record<TransactionType, { label: string; border: string; text: string }> = {
