@@ -20,7 +20,7 @@ export default function LoginPage({ onLogin }: Props) {
 
         <button
           onClick={onLogin}
-          className="w-full bg-white text-black py-4 rounded-2xl font-bold text-base hover:bg-gray-100 transition-all flex items-center justify-center gap-3"
+          className="w-full bg-white text-black py-4 rounded-lg font-bold text-base hover:bg-gray-100 transition-all flex items-center justify-center gap-3"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -49,7 +49,7 @@ export default function LoginPage({ onLogin }: Props) {
             { icon: BrainCircuit, label: 'AI Insights' },
             { icon: PieChart, label: 'Visuals' },
           ].map(({ icon: Icon, label }) => (
-            <div key={label} className="p-4 border border-white/20 rounded-2xl">
+            <div key={label} className="p-4 border border-white/20 rounded-lg">
               <Icon className="w-6 h-6 mx-auto mb-2" />
               <div className="text-[10px] uppercase font-bold tracking-widest">{label}</div>
             </div>

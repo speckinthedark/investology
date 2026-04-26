@@ -325,7 +325,7 @@ export default function ImportGuidePanel({
                 <Callout type="warn" icon={<AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />}>
                   Importing a backup into an account that already has transactions will <strong>duplicate</strong> them. Use this on a fresh account or after clearing your existing transaction log.
                 </Callout>
-                <div className="border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="border border-zinc-800 rounded-lg overflow-hidden">
                   <div className="px-5 py-4">
                     <p className="text-xs font-bold text-zinc-300 mb-1">CSV format</p>
                     <pre className="text-[11px] text-emerald-400 font-mono leading-relaxed">
@@ -382,7 +382,7 @@ export default function ImportGuidePanel({
 
             {/* Field reference (collapsible) — broker tabs only */}
             {broker !== 'stockpulse' && (
-              <div className="border border-zinc-800 rounded-2xl overflow-hidden">
+              <div className="border border-zinc-800 rounded-lg overflow-hidden">
                 <button
                   onClick={() => setShowFields((v) => !v)}
                   className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-800/50 transition-colors"
@@ -430,7 +430,7 @@ export default function ImportGuidePanel({
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  'border-2 border-dashed rounded-2xl p-6 flex flex-col items-center gap-2 text-center cursor-pointer transition-all',
+                  'border-2 border-dashed rounded-lg p-6 flex flex-col items-center gap-2 text-center cursor-pointer transition-all',
                   isDragOver ? 'border-white/40 bg-zinc-800' : 'border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800/40',
                 )}
               >
@@ -452,7 +452,7 @@ export default function ImportGuidePanel({
             )}
 
             {uploadState === 'uploading' && (
-              <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
+              <div className="border-2 border-dashed border-zinc-700 rounded-lg p-6 flex flex-col items-center gap-3 text-center">
                 <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
                 <p className="text-sm font-bold text-zinc-400">Parsing your statement…</p>
               </div>
@@ -460,7 +460,7 @@ export default function ImportGuidePanel({
 
             {uploadState === 'error' && (
               <div className="space-y-3">
-                <div className="border-2 border-rose-800/60 bg-rose-950/20 rounded-2xl p-4 flex items-start gap-3">
+                <div className="border-2 border-rose-800/60 bg-rose-950/20 rounded-lg p-4 flex items-start gap-3">
                   <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-rose-300 leading-relaxed">{errorMsg}</p>
                 </div>
@@ -486,7 +486,7 @@ export default function ImportGuidePanel({
                 </div>
 
                 {/* Preview table */}
-                <div className="max-h-64 overflow-y-auto rounded-2xl border border-zinc-800 divide-y divide-zinc-800/60 custom-scrollbar">
+                <div className="max-h-64 overflow-y-auto rounded-lg border border-zinc-800 divide-y divide-zinc-800/60 custom-scrollbar">
                   {preview.map((tx, i) => (
                     <div
                       key={i}
@@ -515,7 +515,7 @@ export default function ImportGuidePanel({
                 </div>
 
                 {/* Holdings preview */}
-                <div className="rounded-2xl border border-zinc-800 overflow-hidden">
+                <div className="rounded-lg border border-zinc-800 overflow-hidden">
                   <div className="px-4 py-2.5 bg-zinc-800/50 flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
                       {existingHoldings.length > 0 ? 'Combined portfolio after import' : 'Resulting portfolio'}
@@ -567,7 +567,7 @@ export default function ImportGuidePanel({
             )}
 
             {uploadState === 'saving' && (
-              <div className="border-2 border-dashed border-zinc-700 rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
+              <div className="border-2 border-dashed border-zinc-700 rounded-lg p-6 flex flex-col items-center gap-3 text-center">
                 <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
                 <p className="text-sm font-bold text-zinc-400">Saving {selectedCount} transactions…</p>
               </div>
@@ -575,7 +575,7 @@ export default function ImportGuidePanel({
 
             {uploadState === 'cash-entry' && (
               <div className="space-y-4">
-                <div className="border border-emerald-800/60 bg-emerald-950/20 rounded-2xl p-4 flex items-center gap-3">
+                <div className="border border-emerald-800/60 bg-emerald-950/20 rounded-lg p-4 flex items-center gap-3">
                   <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                   <p className="text-xs text-emerald-300 font-bold">{selectedCount} transactions imported successfully.</p>
                 </div>
@@ -619,7 +619,7 @@ export default function ImportGuidePanel({
             )}
 
             {uploadState === 'done' && (
-              <div className="border-2 border-emerald-800/60 bg-emerald-950/20 rounded-2xl p-6 flex flex-col items-center gap-2 text-center">
+              <div className="border-2 border-emerald-800/60 bg-emerald-950/20 rounded-lg p-6 flex flex-col items-center gap-2 text-center">
                 <Check className="w-6 h-6 text-emerald-400" />
                 <p className="text-sm font-bold text-emerald-300">Import complete</p>
                 <p className="text-[11px] text-zinc-500">Your transactions have been saved to your portfolio.</p>
@@ -637,7 +637,7 @@ function Callout({ type, icon, children }: { type: 'info' | 'warn'; icon: ReactN
     ? 'bg-blue-950/30 border-blue-900/40 text-blue-300'
     : 'bg-amber-950/30 border-amber-900/40 text-amber-300';
   return (
-    <div className={cn('p-4 rounded-2xl border flex items-start gap-3', classes)}>
+    <div className={cn('p-4 rounded-lg border flex items-start gap-3', classes)}>
       {icon}
       <p className="text-xs leading-relaxed">{children}</p>
     </div>

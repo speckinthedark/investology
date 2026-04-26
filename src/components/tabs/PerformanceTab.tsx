@@ -345,7 +345,7 @@ export default function PerformanceTab({
       </div>
 
       {/* ── Portfolio value area chart ── */}
-      <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800">
+      <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800">
         <div className="flex items-start justify-between mb-6">
           <div>
             <h3 className="text-xl font-bold italic text-white">Portfolio Value</h3>
@@ -446,7 +446,7 @@ export default function PerformanceTab({
       </div>
 
       {/* ── Monthly returns ── */}
-      <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800">
+      <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800">
         <div className="flex items-start justify-between mb-1">
           <h3 className="text-xl font-bold italic text-white">Monthly Returns</h3>
           <div className="flex items-center gap-2">

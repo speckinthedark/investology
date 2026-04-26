@@ -220,7 +220,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Treemap */}
-      <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800">
+      <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
           <div>
             <h2 className="text-xl font-bold italic text-white">Asset Allocation</h2>
@@ -257,7 +257,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
           </div>
         </div>
 
-        <div className="h-[380px] rounded-2xl overflow-hidden border border-zinc-800">
+        <div className="h-[380px] rounded-lg overflow-hidden border border-zinc-800">
           {treemapData.filter((d) => d.value > 0).length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <Treemap
@@ -278,7 +278,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                     const dCostBasis: number = d.costBasis ?? 0;
                     const dInvestedShare: number = d.investedShare ?? 0;
                     return (
-                      <div className="bg-zinc-900 border border-zinc-700 text-white p-3 rounded-2xl shadow-2xl text-xs min-w-[160px]">
+                      <div className="bg-zinc-900 border border-zinc-700 text-white p-3 rounded-lg shadow-2xl text-xs min-w-[160px]">
                         <div className="flex justify-between gap-6 mb-2">
                           <span className="font-black uppercase">{d.name}</span>
                           <span className="text-zinc-500 uppercase">{d.sector}</span>
@@ -338,7 +338,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
       {(() => {
         const filteredSectors = sectorData.filter((d) => d.value > 0);
         return (
-          <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800">
+          <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800">
             <h3 className="text-xl font-bold italic text-white">Sector Allocation</h3>
             <p className="text-xs text-zinc-500 mt-0.5 mb-8">Hover a slice to highlight</p>
 
@@ -433,7 +433,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-48 border-2 border-dashed border-zinc-700 rounded-2xl text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+              <div className="flex items-center justify-center h-48 border-2 border-dashed border-zinc-700 rounded-lg text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
                 No Data
               </div>
             )}
@@ -443,7 +443,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
       </div>
 
       {/* Holdings Table */}
-      <div className="bg-zinc-900 rounded-[32px] border border-zinc-800 overflow-hidden">
+      <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
         <div className="px-8 py-6 border-b border-zinc-800 flex items-center justify-between">
           <h2 className="text-xl font-bold italic text-white">Holdings</h2>
           <div className="flex items-center gap-4">

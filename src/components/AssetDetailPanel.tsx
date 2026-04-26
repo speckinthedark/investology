@@ -54,7 +54,7 @@ export default function AssetDetailPanel({ ticker, stockData, transactions, onCl
               {assetTxs.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center justify-between p-4 rounded-2xl bg-zinc-800 border border-zinc-700"
+                  className="flex items-center justify-between p-4 rounded-lg bg-zinc-800 border border-zinc-700"
                 >
                   <div className="flex items-center gap-3">
                     <div

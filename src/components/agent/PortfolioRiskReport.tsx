@@ -112,7 +112,7 @@ export default function PortfolioRiskReport({
   }, [initialReport]);
 
   return (
-    <div className="bg-zinc-900 rounded-[32px] border border-zinc-800 p-8">
+    <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -185,7 +185,7 @@ export default function PortfolioRiskReport({
 
           {/* Two-column: Concentration Flags + News Red Flags */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5">
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-5">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Concentration Flags</div>
@@ -204,7 +204,7 @@ export default function PortfolioRiskReport({
               )}
             </div>
 
-            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5">
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Newspaper className="w-3.5 h-3.5 text-rose-400" />
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">News Red Flags</div>
@@ -246,7 +246,7 @@ export default function PortfolioRiskReport({
 
           {/* Drill into a Holding */}
           {holdings.length > 0 && (
-            <div className="bg-zinc-800/50 rounded-2xl p-5">
+            <div className="bg-zinc-800/50 rounded-lg p-5">
               <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">Drill into a Holding</div>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {holdings.map((h) => (

@@ -20,7 +20,7 @@ export default function ConfirmDialog({ message, onConfirm, onCancel }: Props) {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl"
+          className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 max-w-sm w-full shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <h3 className="text-xl font-bold mb-3 text-white">Are you sure?</h3>

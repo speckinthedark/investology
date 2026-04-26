@@ -23,7 +23,7 @@ const TYPE_BADGE: Record<TransactionType, { label: string; classes: string }> = 
 
 export default function TransactionsTab({ transactions, onEdit, onDelete, onAddTrade, onAddCash, onImport, onExport, onClearAll }: Props) {
   return (
-    <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800 min-h-[500px]">
+    <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 min-h-[500px]">
       <div className="flex items-center justify-between mb-8">
         <h3 className="text-xl font-bold italic text-white">Transaction Log</h3>
         <div className="flex gap-2">
@@ -72,7 +72,7 @@ export default function TransactionsTab({ transactions, onEdit, onDelete, onAddT
           return (
             <div
               key={tx.id}
-              className="flex items-center justify-between p-4 rounded-2xl bg-zinc-800 border border-zinc-700 group hover:border-zinc-600 transition-colors"
+              className="flex items-center justify-between p-4 rounded-lg bg-zinc-800 border border-zinc-700 group hover:border-zinc-600 transition-colors"
             >
               <div className="flex items-center gap-4">
                 <div className={cn('w-11 h-11 rounded-full flex items-center justify-center font-bold text-[10px] uppercase shrink-0', badge.classes)}>

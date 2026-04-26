@@ -54,7 +54,7 @@ export default function TransactionModal({ initialType = 'buy', editingTransacti
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-[32px] p-8 max-w-md w-full shadow-2xl">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 max-w-md w-full shadow-2xl">
         <h2 className="text-2xl font-black tracking-tighter uppercase italic mb-6 text-white">
           {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
         </h2>
