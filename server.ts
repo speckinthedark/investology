@@ -234,9 +234,23 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    try {
-      for await (const event of runChat(uid, sessionId, message, holdings, cashBalance, persona)) {
+    const stream = async (sid: string) => {
+      for await (const event of runChat(uid, sid, message, holdings, cashBalance, persona)) {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
+    };
+
+    try {
+      try {
+        await stream(sessionId);
+      } catch (e: any) {
+        if (e?.message?.includes('Session not found')) {
+          const newSessionId = await createChatSession(uid, persona);
+          res.write(`data: ${JSON.stringify({ newSessionId })}\n\n`);
+          await stream(newSessionId);
+        } else {
+          throw e;
+        }
       }
     } catch (e) {
       console.error('Chat agent error:', e);

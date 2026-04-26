@@ -3,6 +3,7 @@ export interface AgentEvent {
   structured?: unknown;
   agent?: string;
   error?: string;
+  newSessionId?: string;
 }
 
 export async function streamAgent(

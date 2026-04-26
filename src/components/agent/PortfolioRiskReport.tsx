@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { RefreshCw, AlertTriangle, TrendingDown, Newspaper, Zap } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { streamAgent } from '../../hooks/useAgentStream';
-import { Holding } from '../../types';
-import { Persona } from '../../types';
+import { Holding, Persona } from '../../types';
 
 interface ConcentrationFlag {
   label: string;
@@ -22,18 +21,11 @@ interface NotableSignal {
   signal: string;
 }
 
-interface ReportData {
+export interface ReportData {
   portfolioHealth: { summary: string };
   concentrationFlags: { flags: ConcentrationFlag[] };
   newsRedFlags: { items: NewsFlag[] };
   notableSignals: { items: NotableSignal[] };
-}
-
-interface Props {
-  uid: string;
-  holdings: Holding[];
-  cashBalance: number;
-  persona: Persona;
 }
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -42,11 +34,29 @@ const SEVERITY_COLOR: Record<string, string> = {
   low: 'text-zinc-400',
 };
 
-export default function PortfolioRiskReport({ uid, holdings, cashBalance, persona }: Props) {
-  const [report, setReport] = useState<ReportData | null>(null);
+interface Props {
+  uid: string;
+  holdings: Holding[];
+  cashBalance: number;
+  persona: Persona;
+  initialReport: ReportData | null;
+  initialGeneratedAt: Date | null;
+  onReportGenerated: (data: ReportData) => void;
+}
+
+export default function PortfolioRiskReport({
+  uid,
+  holdings,
+  cashBalance,
+  persona,
+  initialReport,
+  initialGeneratedAt,
+  onReportGenerated,
+}: Props) {
+  const [report, setReport] = useState<ReportData | null>(initialReport);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(initialGeneratedAt);
 
   const runReport = async () => {
     if (holdings.length === 0) return;
@@ -63,7 +73,9 @@ export default function PortfolioRiskReport({ uid, holdings, cashBalance, person
           const data = event.structured as { type: string } & ReportData;
           if (data.type === 'report') {
             setReport(data);
-            setLastUpdated(new Date());
+            const now = new Date();
+            setLastUpdated(now);
+            onReportGenerated(data);
           }
         }
       },
@@ -71,7 +83,13 @@ export default function PortfolioRiskReport({ uid, holdings, cashBalance, person
     );
   };
 
-  useEffect(() => { runReport(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-generate only when there is no cached report
+  useEffect(() => {
+    if (!initialReport && holdings.length > 0) {
+      runReport();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialReport]);
 
   return (
     <div className="bg-zinc-900 rounded-[32px] border border-zinc-800 p-8">
@@ -81,7 +99,8 @@ export default function PortfolioRiskReport({ uid, holdings, cashBalance, person
           <h3 className="text-xl font-bold italic text-white">Portfolio Risk Report</h3>
           {lastUpdated && (
             <p className="text-[10px] text-zinc-600 mt-0.5">
-              Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              Updated {lastUpdated.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{' '}
+              {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </p>
           )}
         </div>

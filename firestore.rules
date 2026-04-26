@@ -83,6 +83,22 @@ service cloud.firestore {
       match /settings/{settingId} {
         allow read, write: if isOwner(uid);
       }
+
+      match /chatSessions/{sessionId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid);
+        allow update: if isOwner(uid);
+        allow delete: if isOwner(uid);
+
+        match /messages/{messageId} {
+          allow read: if isOwner(uid);
+          allow create: if isOwner(uid);
+        }
+      }
+
+      match /portfolioReport/{docId} {
+        allow read, write: if isOwner(uid);
+      }
     }
   }
 }
