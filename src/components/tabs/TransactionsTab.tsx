@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
@@ -30,16 +30,31 @@ const TYPE_BADGE: Record<TransactionType, { label: string; border: string; text:
   withdrawal: { label: 'W/D',  border: 'border-amber-500',   text: 'text-amber-400' },
 };
 
-const AVATAR_COLORS = [
-  '#7c3aed', '#2563eb', '#059669', '#d97706',
-  '#dc2626', '#0891b2', '#ea580c', '#db2777',
-  '#4f46e5', '#0d9488', '#65a30d', '#c026d3',
+const LOGO_SOURCES = (ticker: string) => [
+  `https://financialmodelingprep.com/image-stock/${ticker}.png`,
+  `https://assets.parqet.com/logos/symbol/${ticker}`,
 ];
 
-function avatarColor(ticker: string): string {
-  let hash = 0;
-  for (const c of ticker) hash = (hash * 31 + c.charCodeAt(0)) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[Math.abs(hash)];
+function TickerLogo({ ticker }: { ticker: string }) {
+  const [srcIndex, setSrcIndex] = useState(0);
+  const sources = LOGO_SOURCES(ticker);
+  const onError = useCallback(() => setSrcIndex((i) => i + 1), []);
+  if (srcIndex >= sources.length) {
+    return (
+      <div className="w-7 h-7 rounded-md bg-zinc-700 flex items-center justify-center text-[9px] font-black text-zinc-300 shrink-0">
+        {ticker.slice(0, 2)}
+      </div>
+    );
+  }
+  return (
+    <img
+      key={srcIndex}
+      src={sources[srcIndex]}
+      alt={ticker}
+      onError={onError}
+      className="w-7 h-7 rounded-md object-contain bg-zinc-800 shrink-0"
+    />
+  );
 }
 
 export default function TransactionsTab({
@@ -143,7 +158,6 @@ export default function TransactionsTab({
             const badge = TYPE_BADGE[tx.type];
             const isCash = tx.type === 'deposit' || tx.type === 'withdrawal';
             const total = isCash ? (tx.price ?? 0) : (tx.shares ?? 0) * (tx.price ?? 0);
-            const initials = tx.ticker === 'CASH' ? '$$' : tx.ticker.slice(0, 2);
 
             return (
               <div key={tx.id}>
@@ -162,12 +176,7 @@ export default function TransactionsTab({
 
                   {/* Asset */}
                   <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-7 h-7 rounded-md flex items-center justify-center text-[9px] font-black text-white shrink-0"
-                      style={{ backgroundColor: avatarColor(tx.ticker) }}
-                    >
-                      {initials}
-                    </div>
+                    <TickerLogo ticker={tx.ticker} />
                     <span className="text-sm font-bold text-white tracking-tight">{tx.ticker}</span>
                   </div>
 
