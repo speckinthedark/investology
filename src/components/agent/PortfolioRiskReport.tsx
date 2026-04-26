@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { RefreshCw, AlertTriangle, TrendingDown, Newspaper, Zap } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { streamAgent } from '../../hooks/useAgentStream';
-import { Holding } from '../../types';
-import { Persona } from '../../types';
+import { Holding, Persona } from '../../types';
 
 interface ConcentrationFlag {
   label: string;

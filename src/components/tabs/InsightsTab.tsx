@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Persona, Holding, ChatSession, StoredMessage, StoredReport } from '../../types';
 import { cn } from '../../lib/utils';
@@ -38,15 +38,18 @@ async function createAdkSession(uid: string, persona: string): Promise<string> {
 }
 
 export default function InsightsTab({ uid, holdings, cashBalance, selectedPersona, onPersonaChange }: Props) {
-  const { sessions, createSession, loadSessionMessages, appendMessage, setSessionTitle, saveReport, loadReport } =
+  const { sessions, sessionError, createSession, loadSessionMessages, appendMessage, setSessionTitle, saveReport, loadReport } =
     useChatSessions(uid);
 
   const [activeView, setActiveView] = useState<string>('report');
   const [cachedReport, setCachedReport] = useState<StoredReport | null>(null);
   const [reportLoading, setReportLoading] = useState(true);
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null);
+  const activeSessionRef = useRef<ActiveSession | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [sessionCreateError, setSessionCreateError] = useState<string | null>(null);
+
+  useEffect(() => { activeSessionRef.current = activeSession; }, [activeSession]);
 
   // Load cached report once on mount
   useEffect(() => {
@@ -61,6 +64,7 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
   };
 
   const handleSelectSession = async (session: ChatSession) => {
+    if (activeView === session.id) return;
     setIsCreating(true);
     setSessionCreateError(null);
     try {
@@ -100,24 +104,25 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
     saveReport(data as unknown as Record<string, unknown>).catch(console.error);
   };
 
-  const handleMessageAppend = (
+  const handleMessageAppend = useCallback((
     role: 'user' | 'agent',
     text: string,
     agent?: string,
     structured?: Record<string, unknown>,
   ) => {
-    if (!activeSession) return Promise.resolve();
-    return appendMessage(activeSession.session.id, role, text, agent, structured);
-  };
+    if (!activeSessionRef.current) return Promise.resolve();
+    return appendMessage(activeSessionRef.current.session.id, role, text, agent, structured);
+  }, [appendMessage]);
 
-  const handleTitleSet = (title: string) => {
-    if (!activeSession) return Promise.resolve();
-    return setSessionTitle(activeSession.session.id, title);
-  };
+  const handleTitleSet = useCallback((title: string) => {
+    if (!activeSessionRef.current) return Promise.resolve();
+    return setSessionTitle(activeSessionRef.current.session.id, title);
+  }, [setSessionTitle]);
 
   return (
     <div className="flex gap-6 items-start">
       {/* Sidebar */}
+      <div className="flex flex-col gap-2">
       <SessionSidebar
         sessions={sessions}
         activeView={activeView}
@@ -126,6 +131,10 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
         onNewSession={handleNewSession}
         isCreating={isCreating}
       />
+      {sessionError && (
+        <p className="text-[10px] text-rose-400 px-3">{sessionError}</p>
+      )}
+      </div>
 
       {/* Main panel */}
       <div className="flex-1 min-w-0 flex flex-col gap-6">
@@ -191,7 +200,7 @@ export default function InsightsTab({ uid, holdings, cashBalance, selectedPerson
             uid={uid}
             holdings={holdings}
             cashBalance={cashBalance}
-            persona={selectedPersona}
+            persona={activeSession.session.persona}
             session={activeSession.session}
             initialMessages={activeSession.messages}
             adkSessionId={activeSession.adkSessionId}

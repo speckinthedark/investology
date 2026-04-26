@@ -47,6 +47,7 @@ export default function SessionSidebar({
       {/* Pinned: Portfolio Risk Report */}
       <button
         onClick={onSelectReport}
+        disabled={isCreating}
         aria-current={activeView === 'report' ? 'page' : undefined}
         className={cn(
           'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-left transition-all border',
