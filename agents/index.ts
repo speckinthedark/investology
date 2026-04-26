@@ -106,11 +106,11 @@ function buildPortfolioRiskAgent() {
   });
 }
 
-function buildOrchestrator(persona: string): LlmAgent {
+function buildOrchestrator(): LlmAgent {
   return new LlmAgent({
     name: 'orchestrator',
     model: 'gemini-3-flash-preview',
-    instruction: ORCHESTRATOR_PROMPT(persona),
+    instruction: ORCHESTRATOR_PROMPT,
     subAgents: [buildNewsAgent(), buildValuationAgent()],
   });
 }
@@ -141,8 +141,8 @@ export function buildPortfolioContext(holdings: Holding[], cashBalance: number):
 
 // ─── createChatSession ─────────────────────────────────────────────────────────
 
-export async function createChatSession(uid: string, persona: string): Promise<string> {
-  const orchestrator = buildOrchestrator(persona);
+export async function createChatSession(uid: string): Promise<string> {
+  const orchestrator = buildOrchestrator();
   // Runner is created to satisfy the API, but the shared sessionService drives session storage
   const _runner = new Runner({ appName: APP_NAME, agent: orchestrator, sessionService });
   const session = await sessionService.createSession({ appName: APP_NAME, userId: uid });
@@ -155,7 +155,6 @@ export async function* runPortfolioReport(
   uid: string,
   holdings: Holding[],
   cashBalance: number,
-  persona: string,
 ): AsyncGenerator<{ text?: string; structured?: unknown; error?: string }> {
   const context = buildPortfolioContext(holdings, cashBalance);
   const reportSessionService = new InMemorySessionService();
@@ -168,9 +167,6 @@ export async function* runPortfolioReport(
     appName: APP_NAME + '_report',
     userId: uid,
   });
-
-  // persona is available if the prompt ever needs it in future; suppress unused warning
-  void persona;
 
   let fullText = '';
   for await (const event of runner.runAsync({
@@ -209,9 +205,8 @@ export async function* runChat(
   message: string,
   holdings: Holding[],
   cashBalance: number,
-  persona: string,
 ): AsyncGenerator<{ text?: string; structured?: unknown; agent?: string; error?: string }> {
-  const orchestrator = buildOrchestrator(persona);
+  const orchestrator = buildOrchestrator();
   const runner = new Runner({ appName: APP_NAME, agent: orchestrator, sessionService });
 
   let activeAgent = 'orchestrator';
