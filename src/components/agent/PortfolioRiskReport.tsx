@@ -21,8 +21,15 @@ interface NotableSignal {
   signal: string;
 }
 
+export interface HealthMetric {
+  label: string;
+  value: string;
+  score: number;       // 0-100, fills the horizontal bar
+  tone: 'gain' | 'loss' | 'warn';
+}
+
 export interface ReportData {
-  portfolioHealth: { summary: string };
+  portfolioHealth: { summary: string; metrics?: HealthMetric[] };
   concentrationFlags: { flags: ConcentrationFlag[] };
   newsRedFlags: { items: NewsFlag[] };
   notableSignals: { items: NotableSignal[] };
@@ -34,10 +41,22 @@ const SEVERITY_COLOR: Record<string, string> = {
   low: 'text-zinc-400',
 };
 
+const TONE_BAR: Record<string, string> = {
+  gain: 'bg-emerald-500',
+  loss: 'bg-rose-500',
+  warn: 'bg-amber-400',
+};
+
+const TONE_TEXT: Record<string, string> = {
+  gain: 'text-emerald-400',
+  loss: 'text-rose-400',
+  warn: 'text-amber-400',
+};
+
 interface Props {
   uid: string;
   holdings: Holding[];
-  stockPrices: Record<string, unknown>;
+  stockPrices: Record<string, { price?: number }>;
   cashBalance: number;
   initialReport: ReportData | null;
   initialGeneratedAt: Date | null;
@@ -57,6 +76,7 @@ export default function PortfolioRiskReport({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(initialGeneratedAt);
+  const [drilledTicker, setDrilledTicker] = useState<string | null>(null);
 
   const runReport = async () => {
     if (holdings.length === 0) return;
@@ -137,68 +157,146 @@ export default function PortfolioRiskReport({
 
       {/* Report sections */}
       {report && !loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-6">
           {/* Portfolio Health */}
-          <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5 md:col-span-2">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Portfolio Health</div>
-            <p className="text-sm text-zinc-300 leading-relaxed">{report.portfolioHealth.summary}</p>
-          </div>
-
-          {/* Concentration Flags */}
-          <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5">
+          <div>
             <div className="flex items-center gap-2 mb-3">
-              <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Concentration Flags</div>
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Portfolio Health</span>
             </div>
-            {report.concentrationFlags.flags.length === 0 ? (
-              <p className="text-xs text-zinc-600 italic">No concentration issues detected.</p>
-            ) : (
-              <div className="space-y-2">
-                {report.concentrationFlags.flags.map((f, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-400">{f.label}</span>
-                    <span className={cn('text-xs font-bold', SEVERITY_COLOR[f.severity])}>{f.value}</span>
+            <p className="text-sm text-zinc-300 leading-relaxed mb-4">{report.portfolioHealth.summary}</p>
+            {report.portfolioHealth.metrics && report.portfolioHealth.metrics.length > 0 && (
+              <div className="space-y-3">
+                {report.portfolioHealth.metrics.map((m, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <span className="text-[11px] text-zinc-500 w-32 shrink-0">{m.label}</span>
+                    <span className={cn('text-[11px] font-bold w-20 shrink-0', TONE_TEXT[m.tone])}>{m.value}</span>
+                    <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={cn('h-full rounded-full', TONE_BAR[m.tone])}
+                        style={{ width: `${Math.max(0, Math.min(100, m.score))}%` }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* News Red Flags */}
-          <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Newspaper className="w-3.5 h-3.5 text-rose-400" />
-              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">News Red Flags</div>
-            </div>
-            {report.newsRedFlags.items.length === 0 ? (
-              <p className="text-xs text-zinc-600 italic">No significant news flags.</p>
-            ) : (
-              <div className="space-y-2">
-                {report.newsRedFlags.items.map((item, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-[10px] font-black text-rose-400 shrink-0 mt-0.5">{item.ticker}</span>
-                    <span className="text-xs text-zinc-400 leading-snug">{item.headline}</span>
-                  </div>
-                ))}
+          {/* Two-column: Concentration Flags + News Red Flags */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
+                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Concentration Flags</div>
               </div>
-            )}
+              {report.concentrationFlags.flags.length === 0 ? (
+                <p className="text-xs text-zinc-600 italic">No concentration issues detected.</p>
+              ) : (
+                <div className="space-y-2">
+                  {report.concentrationFlags.flags.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between py-1 border-b border-zinc-700/30 last:border-0">
+                      <span className="text-xs text-zinc-400">{f.label}</span>
+                      <span className={cn('text-xs font-bold', SEVERITY_COLOR[f.severity])}>{f.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Newspaper className="w-3.5 h-3.5 text-rose-400" />
+                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">News Red Flags</div>
+              </div>
+              {report.newsRedFlags.items.length === 0 ? (
+                <p className="text-xs text-zinc-600 italic">No significant news flags.</p>
+              ) : (
+                <div className="space-y-2">
+                  {report.newsRedFlags.items.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2 py-1 border-b border-zinc-700/30 last:border-0">
+                      <span className="text-[10px] font-black text-rose-400 shrink-0 mt-0.5">{item.ticker}</span>
+                      <span className="text-xs text-zinc-400 leading-snug">{item.headline}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Notable Signals */}
           {report.notableSignals.items.length > 0 && (
-            <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5 md:col-span-2">
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="w-3.5 h-3.5 text-blue-400" />
                 <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Notable Signals</div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-2">
                 {report.notableSignals.items.map((item, i) => (
-                  <div key={i} className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5">
-                    <span className="text-[10px] font-black text-blue-400">{item.ticker}</span>
-                    <span className="text-[11px] text-zinc-400">{item.signal}</span>
+                  <div key={i} className="flex items-center gap-3 py-2 border-b border-zinc-800 last:border-0">
+                    <span className="px-2 py-0.5 bg-blue-950/60 text-blue-400 text-[10px] font-black rounded-full shrink-0">
+                      {item.ticker}
+                    </span>
+                    <span className="text-xs text-zinc-400">{item.signal}</span>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Drill into a Holding */}
+          {holdings.length > 0 && (
+            <div className="bg-zinc-800/50 rounded-2xl p-5">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">Drill into a Holding</div>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {holdings.map((h) => (
+                  <button
+                    key={h.ticker}
+                    onClick={() => setDrilledTicker(drilledTicker === h.ticker ? null : h.ticker)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-[11px] font-bold shrink-0 transition-all border',
+                      drilledTicker === h.ticker
+                        ? 'bg-violet-600 border-violet-600 text-white'
+                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white',
+                    )}
+                  >
+                    {h.ticker}
+                  </button>
+                ))}
+              </div>
+
+              {drilledTicker && (() => {
+                const h = holdings.find((x) => x.ticker === drilledTicker);
+                if (!h) return null;
+                const price = (stockPrices[h.ticker] as { price?: number })?.price ?? h.averagePrice;
+                const posValue = h.shares * price;
+                const unrealizedPL = (price - h.averagePrice) * h.shares;
+                const totalHoldingsValue = holdings.reduce(
+                  (acc, x) => acc + x.shares * ((stockPrices[x.ticker] as { price?: number })?.price ?? x.averagePrice), 0,
+                );
+                const pctOfPortfolio = totalHoldingsValue > 0 ? (posValue / totalHoldingsValue) * 100 : 0;
+                const cells: { label: string; value: string; tone?: 'gain' | 'loss' }[] = [
+                  { label: 'Position Value', value: `$${posValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+                  { label: 'Avg Cost', value: `$${h.averagePrice.toFixed(2)}` },
+                  { label: 'Unrealized P/L', value: `${unrealizedPL >= 0 ? '+' : ''}$${Math.abs(unrealizedPL).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, tone: unrealizedPL >= 0 ? 'gain' : 'loss' },
+                  { label: '% of Portfolio', value: `${pctOfPortfolio.toFixed(1)}%` },
+                ];
+                return (
+                  <div className="grid grid-cols-4 gap-2 mt-3">
+                    {cells.map((c, i) => (
+                      <div key={i} className="bg-zinc-900 p-4 rounded-xl">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">{c.label}</div>
+                        <div className={cn(
+                          'text-sm font-bold',
+                          c.tone === 'gain' ? 'text-emerald-400' : c.tone === 'loss' ? 'text-rose-400' : 'text-white',
+                        )}>
+                          {c.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
