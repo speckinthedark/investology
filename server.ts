@@ -29,23 +29,30 @@ async function startServer() {
 
   app.use(express.json());
 
-  // --- Finnhub stock data ---
+  // --- Stock quote + 7-day sparkline ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
 
     try {
-      const [quote, history, summary] = await Promise.all([
+      const from = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+
+      const [quote, chartData, summary] = await Promise.all([
         yahooFinance.quote(ticker),
-        yahooFinance.historical(ticker, {
-          period1: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
-          period2: new Date().toISOString().split('T')[0],
-          interval: '1d',
-        }).catch(() => []),
+        // chart() uses the v8 API — more reliable than historical() for short windows
+        (yahooFinance as any).chart(ticker, { period1: from, interval: '1d' }).catch(() => null),
         yahooFinance.quoteSummary(ticker, { modules: ['assetProfile'] }).catch(() => null),
       ]);
 
       const price = (quote as any).regularMarketPrice ?? 0;
       if (!price) throw new Error(`No price data for ${ticker}`);
+
+      const quotes: any[] = chartData?.quotes ?? [];
+      const history = quotes
+        .filter((q: any) => q.close != null)
+        .map((q: any) => ({
+          date: new Date(q.date).toISOString().split('T')[0],
+          price: parseFloat(q.close.toFixed(2)),
+        }));
 
       res.json({
         ticker,
@@ -53,12 +60,7 @@ async function startServer() {
         change: (quote as any).regularMarketChange ?? 0,
         changePercent: (quote as any).regularMarketChangePercent ?? 0,
         sector: (summary as any)?.assetProfile?.sector ?? 'Other',
-        history: (history as any[])
-          .filter((q: any) => q.close != null)
-          .map((q: any) => ({
-            date: new Date(q.date).toISOString().split('T')[0],
-            price: q.close,
-          })),
+        history,
       });
     } catch (e) {
       console.error('Yahoo Finance quote error:', e);
