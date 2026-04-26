@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ResponsiveContainer, Treemap, Tooltip, PieChart, Pie, Cell, LineChart, Line,
+  ResponsiveContainer, Treemap, Tooltip, PieChart, Pie, Cell, Sector, LineChart, Line,
 } from 'recharts';
 import { Download, Trash2, Search, ArrowUpDown, ChevronUp, ChevronDown, PieChart as PieChartIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -18,7 +18,7 @@ interface Props {
 
 type TreemapView = 'day' | 'total' | 'invested';
 
-const SECTOR_COLORS = ['#3b82f6', '#6366f1', '#8b5cf6', '#a78bfa', '#60a5fa', '#34d399', '#f59e0b', '#f87171'];
+const SECTOR_COLORS = ['#60a5fa', '#818cf8', '#c084fc', '#2dd4bf', '#4ade80', '#a3e635', '#fbbf24', '#f87171', '#94a3b8', '#fb923c', '#e879f9', '#38bdf8'];
 
 const getReturnColor = (change: number) => {
   if (change <= -3)  return '#7f1d1d';
@@ -102,6 +102,7 @@ const INVESTED_LEGEND = [
 export default function OverviewTab({ holdings, stockPrices, cashBalance, totalPortfolioValue, onDeleteHolding, onSelectAsset }: Props) {
   const [treemapView, setTreemapView] = useState<TreemapView>('day');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'marketValue', direction: 'desc' });
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const totalCostBasis = holdings.reduce((acc, h) => acc + (h.shares ?? 0) * (h.averagePrice ?? 0), 0) + cashBalance;
 
@@ -333,52 +334,111 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
       </div>
 
       {/* Sector Donut */}
-      <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800 flex flex-col md:flex-row items-center gap-8">
-        <div className="w-full md:w-1/2 h-56">
-          {sectorData.filter((d) => d.value > 0).length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={sectorData.filter((d) => d.value > 0)} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value" stroke="none">
-                  {sectorData.map((_, i) => <Cell key={i} fill={SECTOR_COLORS[i % SECTOR_COLORS.length]} />)}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const d = payload[0].payload;
+      {(() => {
+        const filteredSectors = sectorData.filter((d) => d.value > 0);
+        return (
+          <div className="bg-zinc-900 rounded-[32px] p-8 border border-zinc-800">
+            <h3 className="text-xl font-bold italic text-white">Sector Allocation</h3>
+            <p className="text-xs text-zinc-500 mt-0.5 mb-8">Hover a slice to highlight</p>
+
+            {filteredSectors.length > 0 ? (
+              <div className="flex flex-col md:flex-row items-center gap-10">
+                {/* Donut chart */}
+                <div className="relative shrink-0" style={{ width: 240, height: 240 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={filteredSectors}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={78}
+                        outerRadius={112}
+                        paddingAngle={3}
+                        dataKey="value"
+                        stroke="none"
+                        onMouseEnter={(_data: any, index: number) => setActiveIndex(index)}
+                        onMouseLeave={() => setActiveIndex(null)}
+                        {...({
+                          activeIndex: activeIndex ?? undefined,
+                          activeShape: (props: any) => {
+                            const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+                            return (
+                              <Sector
+                                cx={cx} cy={cy}
+                                innerRadius={innerRadius}
+                                outerRadius={outerRadius + 8}
+                                startAngle={startAngle}
+                                endAngle={endAngle}
+                                fill={fill}
+                              />
+                            );
+                          },
+                        } as any)}
+                      >
+                        {filteredSectors.map((_, i) => (
+                          <Cell key={i} fill={SECTOR_COLORS[i % SECTOR_COLORS.length]} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-500">Sectors</div>
+                    <div className="text-5xl font-light text-white leading-none mt-0.5">{filteredSectors.length}</div>
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="flex-1 w-full min-w-0">
+                  {filteredSectors.map((s, i) => {
+                    const pct = totalPortfolioValue > 0 ? ((s.value / totalPortfolioValue) * 100).toFixed(1) : '0.0';
+                    const isActive = activeIndex === i;
+                    const isDimmed = activeIndex !== null && !isActive;
                     return (
-                      <div className="bg-zinc-900 border border-zinc-700 text-white p-3 rounded-2xl text-xs">
-                        <div className="font-black uppercase mb-1">{d.name}</div>
-                        <div className="font-mono font-bold text-blue-400">${d.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div key={s.name}>
+                        <div
+                          className={cn(
+                            'flex items-center justify-between py-3 cursor-default transition-opacity duration-150',
+                            isDimmed ? 'opacity-25' : 'opacity-100',
+                          )}
+                          onMouseEnter={() => setActiveIndex(i)}
+                          onMouseLeave={() => setActiveIndex(null)}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length] }}
+                            />
+                            <span className={cn(
+                              'text-[10px] font-bold uppercase tracking-widest truncate transition-colors duration-150',
+                              isActive ? 'text-white' : 'text-zinc-500',
+                            )}>
+                              {s.name}
+                            </span>
+                          </div>
+                          <span className={cn(
+                            'font-mono text-[11px] font-bold shrink-0 ml-6 transition-colors duration-150',
+                            isActive ? 'text-white' : 'text-zinc-500',
+                          )}>
+                            {pct}%
+                          </span>
+                        </div>
+                        {i < filteredSectors.length - 1 && (
+                          <div className="border-b border-dashed border-zinc-800" />
+                        )}
                       </div>
                     );
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-zinc-700 rounded-full text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
-              No Data
-            </div>
-          )}
-        </div>
-
-        <div className="w-full md:w-1/2">
-          <h3 className="text-sm font-bold italic mb-4 text-white">Sector Allocation</h3>
-          <div className="space-y-3">
-            {sectorData.map((s, i) => (
-              <div key={s.name} className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length] }} />
-                  <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 truncate">{s.name}</span>
+                  })}
                 </div>
-                <span className="font-mono text-xs font-bold text-white shrink-0">
-                  {totalPortfolioValue > 0 ? ((s.value / totalPortfolioValue) * 100).toFixed(1) : 0}%
-                </span>
               </div>
-            ))}
+            ) : (
+              <div className="flex items-center justify-center h-48 border-2 border-dashed border-zinc-700 rounded-2xl text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+                No Data
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Holdings Table */}
       <div className="bg-zinc-900 rounded-[32px] border border-zinc-800 overflow-hidden">
