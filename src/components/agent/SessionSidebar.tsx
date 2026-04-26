@@ -4,7 +4,7 @@ import { ChatSession } from '../../types';
 
 interface Props {
   sessions: ChatSession[];
-  activeView: 'report' | string;
+  activeView: string;
   onSelectReport: () => void;
   onSelectSession: (session: ChatSession) => void;
   onNewSession: () => void;
@@ -47,6 +47,7 @@ export default function SessionSidebar({
       {/* Pinned: Portfolio Risk Report */}
       <button
         onClick={onSelectReport}
+        aria-current={activeView === 'report' ? 'page' : undefined}
         className={cn(
           'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl text-left transition-all border',
           activeView === 'report'
@@ -55,7 +56,7 @@ export default function SessionSidebar({
         )}
       >
         <ShieldAlert className={cn('w-4 h-4 flex-shrink-0', activeView === 'report' ? 'text-violet-400' : 'text-zinc-500')} />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-[11px] font-bold truncate">Risk Report</div>
           <div className="text-[9px] uppercase tracking-widest text-zinc-500 mt-0.5">AI analysis</div>
         </div>
@@ -71,6 +72,7 @@ export default function SessionSidebar({
         <button
           key={s.id}
           onClick={() => onSelectSession(s)}
+          aria-current={activeView === s.id ? 'page' : undefined}
           className={cn(
             'flex items-start gap-2.5 w-full px-3 py-2.5 rounded-xl text-left transition-all border',
             activeView === s.id
