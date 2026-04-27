@@ -194,6 +194,22 @@ async function startServer() {
     }
   });
 
+  // Helper: pick only the fields the frontend needs from a Yahoo Finance outlook object
+  function shapeOutlook(o: any) {
+    return {
+      stateDescription: o.stateDescription,
+      direction: o.direction,
+      score: o.score,
+      scoreDescription: o.scoreDescription,
+      sectorDirection: o.sectorDirection ?? null,
+      sectorScore: o.sectorScore ?? null,
+      sectorScoreDescription: o.sectorScoreDescription ?? null,
+      indexDirection: o.indexDirection,
+      indexScore: o.indexScore,
+      indexScoreDescription: o.indexScoreDescription,
+    };
+  }
+
   // --- Yahoo Finance Insights for Research tab ---
   app.get('/api/stock/insights/:ticker', async (req, res) => {
     const ticker = (req.params.ticker as string).toUpperCase();
@@ -218,9 +234,9 @@ async function startServer() {
           : null,
         technicalEvents: raw.instrumentInfo?.technicalEvents
           ? {
-              shortTermOutlook: raw.instrumentInfo.technicalEvents.shortTermOutlook,
-              intermediateTermOutlook: raw.instrumentInfo.technicalEvents.intermediateTermOutlook,
-              longTermOutlook: raw.instrumentInfo.technicalEvents.longTermOutlook,
+              shortTermOutlook: shapeOutlook(raw.instrumentInfo.technicalEvents.shortTermOutlook),
+              intermediateTermOutlook: shapeOutlook(raw.instrumentInfo.technicalEvents.intermediateTermOutlook),
+              longTermOutlook: shapeOutlook(raw.instrumentInfo.technicalEvents.longTermOutlook),
             }
           : null,
         keyTechnicals: raw.instrumentInfo?.keyTechnicals
@@ -245,6 +261,9 @@ async function startServer() {
     }
   });
 
+  // NOTE: This catch-all must remain BELOW all /api/stock/[specific]/:ticker routes
+  // (e.g. /api/stock/detail/:ticker, /api/stock/insights/:ticker). Express matches
+  // routes in registration order; moving this above them would silently swallow requests.
   // --- Stock quote + 7-day sparkline ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
