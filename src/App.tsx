@@ -38,6 +38,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
   const [isHidden, setIsHidden] = useState(false);
+  const [researchTicker, setResearchTicker] = useState<string | null>(null);
   const [showCashModal, setShowCashModal] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; type: TransactionType; editing?: Transaction }>({ open: false, type: 'buy' });
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -241,6 +242,7 @@ export default function App() {
                     totalPortfolioValue={totalPortfolioValue}
                     onDeleteHolding={handleDeleteHolding}
                     onSelectAsset={setSelectedAsset}
+                    onResearchTicker={(ticker) => { setResearchTicker(ticker); setActiveTab('research'); }}
                   />
                 )}
                 {activeTab === 'transactions' && (
@@ -294,7 +296,11 @@ export default function App() {
                   </div>
                 )}
                 {activeTab === 'research' && (
-                  <ResearchTab holdings={holdings} />
+                  <ResearchTab
+                    holdings={holdings}
+                    initialTicker={researchTicker}
+                    onInitialTickerConsumed={() => setResearchTicker(null)}
+                  />
                 )}
               </motion.div>
             </AnimatePresence>

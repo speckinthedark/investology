@@ -1,4 +1,4 @@
-import { StockData, PriceHistory, StockDetail, StockInsights } from '../types';
+import { StockData, PriceHistory, StockDetail, StockInsights, ScreenerQuote } from '../types';
 
 export async function fetchStockData(ticker: string): Promise<StockData> {
   try {
@@ -70,4 +70,11 @@ export async function fetchStockInsights(ticker: string): Promise<StockInsights>
   const res = await fetch(`/api/stock/insights/${encodeURIComponent(ticker.toUpperCase())}`);
   if (!res.ok) throw new Error('Failed to fetch insights');
   return res.json();
+}
+
+export async function fetchScreener(screenerId: string): Promise<ScreenerQuote[]> {
+  const res = await fetch(`/api/screener/${encodeURIComponent(screenerId)}`);
+  if (!res.ok) throw new Error('Failed to fetch screener');
+  const data = await res.json();
+  return data.quotes ?? [];
 }

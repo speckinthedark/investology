@@ -141,6 +141,18 @@ export interface StockDetail {
   quarterlyFreeCashFlow: FinancialPeriod[];
 }
 
+export interface ScreenerQuote {
+  symbol: string;
+  shortName: string;
+  regularMarketPrice: number | null;
+  regularMarketChangePercent: number | null;
+  marketCap: number | null;
+  regularMarketVolume: number | null;
+  averageDailyVolume3Month: number | null;
+  trailingPE: number | null;
+  fiftyTwoWeekChangePercent: number | null;
+}
+
 export type InsightsDirection = 'Bearish' | 'Bullish' | 'Neutral';
 
 export interface InsightsOutlook {

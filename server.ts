@@ -499,6 +499,32 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     }
   });
 
+  // --- Yahoo Finance screener ---
+  app.get('/api/screener/:screenerId', async (req, res) => {
+    const { screenerId } = req.params;
+    try {
+      const result = await (yahooFinance as any).screener({
+        scrIds: screenerId,
+        count: 10,
+      });
+      const quotes = (result.quotes ?? []).map((q: any) => ({
+        symbol:                    q.symbol,
+        shortName:                 q.shortName ?? q.symbol,
+        regularMarketPrice:        q.regularMarketPrice ?? null,
+        regularMarketChangePercent: q.regularMarketChangePercent ?? null,
+        marketCap:                 q.marketCap ?? null,
+        regularMarketVolume:       q.regularMarketVolume ?? null,
+        averageDailyVolume3Month:  q.averageDailyVolume3Month ?? null,
+        trailingPE:                q.trailingPE ?? null,
+        fiftyTwoWeekChangePercent: q.fiftyTwoWeekChangePercent ?? null,
+      }));
+      res.json({ quotes });
+    } catch (e) {
+      console.error('Screener error:', e);
+      res.status(500).json({ error: 'Failed to fetch screener data' });
+    }
+  });
+
   // --- eToro XLSX import ---
   app.post('/api/import/etoro', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
