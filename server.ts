@@ -29,6 +29,25 @@ const EXCHANGE_MAP: Record<string, string> = {
   PCX: 'AMEX', ASE: 'AMEX',
 };
 
+function shapeOutlook(o: any): {
+  stateDescription: string; direction: string; score: number; scoreDescription: string;
+  sectorDirection: string | null; sectorScore: number | null; sectorScoreDescription: string | null;
+  indexDirection: string; indexScore: number; indexScoreDescription: string;
+} {
+  return {
+    stateDescription: o.stateDescription,
+    direction: o.direction,
+    score: o.score,
+    scoreDescription: o.scoreDescription,
+    sectorDirection: o.sectorDirection ?? null,
+    sectorScore: o.sectorScore ?? null,
+    sectorScoreDescription: o.sectorScoreDescription ?? null,
+    indexDirection: o.indexDirection,
+    indexScore: o.indexScore,
+    indexScoreDescription: o.indexScoreDescription,
+  };
+}
+
 function buildFTSPeriods(
   data: any[],
   field: string,
@@ -193,22 +212,6 @@ async function startServer() {
       res.status(500).json({ error: 'Failed to fetch stock data' });
     }
   });
-
-  // Helper: pick only the fields the frontend needs from a Yahoo Finance outlook object
-  function shapeOutlook(o: any) {
-    return {
-      stateDescription: o.stateDescription,
-      direction: o.direction,
-      score: o.score,
-      scoreDescription: o.scoreDescription,
-      sectorDirection: o.sectorDirection ?? null,
-      sectorScore: o.sectorScore ?? null,
-      sectorScoreDescription: o.sectorScoreDescription ?? null,
-      indexDirection: o.indexDirection,
-      indexScore: o.indexScore,
-      indexScoreDescription: o.indexScoreDescription,
-    };
-  }
 
   // --- Yahoo Finance Insights for Research tab ---
   app.get('/api/stock/insights/:ticker', async (req, res) => {

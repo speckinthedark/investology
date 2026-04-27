@@ -13,6 +13,7 @@ const DIRECTION_STYLE: Record<InsightsDirection, { badge: string; dot: string }>
 
 function OutlookRow({ label, outlook }: { label: string; outlook: InsightsOutlook }) {
   const style = DIRECTION_STYLE[outlook.direction];
+  const filled = Math.min(5, Math.max(0, Math.round(outlook.score)));
   return (
     <div className="flex items-center gap-4 py-3">
       <div className="w-24 shrink-0 text-[9px] font-black uppercase tracking-widest text-zinc-500">{label}</div>
@@ -23,7 +24,7 @@ function OutlookRow({ label, outlook }: { label: string; outlook: InsightsOutloo
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className={cn('w-1.5 h-1.5 rounded-full', i < outlook.score ? style.dot : 'bg-zinc-700')}
+            className={cn('w-1.5 h-1.5 rounded-full', i < filled ? style.dot : 'bg-zinc-700')}
           />
         ))}
       </div>
