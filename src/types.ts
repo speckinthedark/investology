@@ -140,3 +140,48 @@ export interface StockDetail {
   quarterlyFinancingCashFlow: FinancialPeriod[];
   quarterlyFreeCashFlow: FinancialPeriod[];
 }
+
+export type InsightsDirection = 'Bearish' | 'Bullish' | 'Neutral';
+
+export interface InsightsOutlook {
+  stateDescription: string;
+  direction: InsightsDirection;
+  score: number;
+  scoreDescription: string;
+  sectorDirection?: InsightsDirection;
+  sectorScore?: number;
+  sectorScoreDescription?: string;
+  indexDirection: InsightsDirection;
+  indexScore: number;
+  indexScoreDescription: string;
+}
+
+export interface StockInsights {
+  recommendation: {
+    rating: 'BUY' | 'SELL' | 'HOLD';
+    targetPrice: number | null;
+    provider: string;
+  } | null;
+  valuation: {
+    description: string | null;
+    discount: string | null;
+    relativeValue: string | null;
+    provider: string;
+  } | null;
+  technicalEvents: {
+    shortTermOutlook: InsightsOutlook;
+    intermediateTermOutlook: InsightsOutlook;
+    longTermOutlook: InsightsOutlook;
+  } | null;
+  keyTechnicals: {
+    support: number | null;
+    resistance: number | null;
+    stopLoss: number | null;
+    provider: string;
+  } | null;
+  upsell: {
+    bullishSummary: string[] | null;
+    bearishSummary: string[] | null;
+    companyName: string | null;
+  } | null;
+}
