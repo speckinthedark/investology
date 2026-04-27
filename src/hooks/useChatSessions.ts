@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import {
-  collection, doc, addDoc, setDoc, getDoc, getDocs,
+  collection, doc, addDoc, setDoc, getDoc, getDocs, deleteDoc,
   onSnapshot, orderBy, query, serverTimestamp, Timestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ChatSession, StoredMessage, StoredReport, Persona } from '../types';
+import { ChatSession, StoredMessage, StoredReport } from '../types';
 
 export function useChatSessions(uid: string) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -25,7 +25,6 @@ export function useChatSessions(uid: string) {
             return {
               id: d.id,
               title: data.title ?? 'New Chat',
-              persona: data.persona ?? 'buffett',
               createdAt: (data.createdAt as Timestamp)?.toDate(),
               updatedAt: (data.updatedAt as Timestamp)?.toDate(),
             } satisfies ChatSession;
@@ -39,15 +38,14 @@ export function useChatSessions(uid: string) {
     );
   }, [uid]);
 
-  const createSession = async (persona: Persona): Promise<ChatSession> => {
+  const createSession = async (): Promise<ChatSession> => {
     if (!uid) throw new Error('useChatSessions: uid is required');
     const ref = await addDoc(collection(db, 'users', uid, 'chatSessions'), {
       title: 'New Chat',
-      persona,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    return { id: ref.id, title: 'New Chat', persona, createdAt: new Date(), updatedAt: new Date() };
+    return { id: ref.id, title: 'New Chat', createdAt: new Date(), updatedAt: new Date() };
   };
 
   const loadSessionMessages = async (sessionId: string): Promise<StoredMessage[]> => {
@@ -93,6 +91,23 @@ export function useChatSessions(uid: string) {
     await batch.commit();
   };
 
+  const deleteSession = async (sessionId: string): Promise<void> => {
+    if (!uid) return;
+    // Delete the session doc first so it's immediately removed from the list.
+    // If this succeeds, the onSnapshot fires and the chat disappears permanently.
+    await deleteDoc(doc(db, 'users', uid, 'chatSessions', sessionId));
+    // Clean up messages in the background — orphaned subcollection data doesn't
+    // resurface in the UI, so a failure here doesn't affect the user.
+    getDocs(collection(db, 'users', uid, 'chatSessions', sessionId, 'messages'))
+      .then((snap) => {
+        if (snap.empty) return;
+        const batch = writeBatch(db);
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        return batch.commit();
+      })
+      .catch((err) => console.warn('Session messages cleanup failed:', err));
+  };
+
   const setSessionTitle = async (sessionId: string, title: string): Promise<void> => {
     if (!uid) return;
     await setDoc(
@@ -128,6 +143,7 @@ export function useChatSessions(uid: string) {
     loadSessionMessages,
     appendMessage,
     setSessionTitle,
+    deleteSession,
     saveReport,
     loadReport,
   };

@@ -23,7 +23,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
     if (error) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-          <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-xl border border-red-100">
+          <div className="bg-white rounded-xl p-8 max-w-lg w-full shadow-xl border border-red-100">
             <h2 className="text-xl font-bold text-red-600 mb-3">Something went wrong</h2>
             <pre className="bg-gray-100 rounded-xl p-4 text-xs text-gray-700 overflow-auto max-h-48 mb-6 whitespace-pre-wrap">
               {error}

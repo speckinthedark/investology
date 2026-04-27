@@ -1,10 +1,7 @@
-export type Persona = 'buffett' | 'lynch';
-
 export interface UserProfile {
   uid: string;
   displayName?: string;
   email: string;
-  selectedPersona?: Persona;
 }
 
 export interface Holding {
@@ -46,7 +43,6 @@ export interface StoredMessage {
 export interface ChatSession {
   id: string;
   title: string;
-  persona: Persona;
   createdAt?: Date;
   updatedAt?: Date;
 }

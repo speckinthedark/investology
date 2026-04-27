@@ -73,7 +73,7 @@ export default function MentionInput({ onSend, disabled }: Props) {
       )}
 
       {/* Input row */}
-      <div className="flex items-end gap-3 bg-zinc-800 border border-zinc-700 rounded-2xl px-4 py-3 focus-within:border-zinc-500 transition-colors">
+      <div className="flex items-end gap-3 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 focus-within:border-zinc-500 transition-colors">
         <textarea
           ref={inputRef}
           value={value}

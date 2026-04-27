@@ -2,13 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import AgentMessage, { ChatMessage } from './AgentMessage';
 import MentionInput from './MentionInput';
 import { streamAgent } from '../../hooks/useAgentStream';
-import { Holding, Persona, ChatSession, StoredMessage } from '../../types';
+import { Holding, ChatSession, StoredMessage } from '../../types';
 
 interface Props {
   uid: string;
   holdings: Holding[];
   cashBalance: number;
-  persona: Persona;
   session: ChatSession;
   initialMessages: StoredMessage[];
   adkSessionId: string;
@@ -39,7 +38,6 @@ export default function AgentChat({
   uid,
   holdings,
   cashBalance,
-  persona,
   session,
   initialMessages,
   adkSessionId,
@@ -83,7 +81,7 @@ export default function AgentChat({
 
     await streamAgent(
       '/api/agent/chat',
-      { uid, sessionId, message: text, holdings, cashBalance, persona },
+      { uid, sessionId, message: text, holdings, cashBalance },
       (event) => {
         if (event.newSessionId) {
           setSessionId(event.newSessionId);
@@ -130,7 +128,7 @@ export default function AgentChat({
   };
 
   return (
-    <div className="bg-zinc-900 rounded-[32px] border border-zinc-800 p-8 flex flex-col gap-6">
+    <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-8 flex flex-col gap-6">
       <div>
         <h3 className="text-xl font-bold italic text-white">Research Chat</h3>
         <p className="text-xs text-zinc-500 mt-0.5">

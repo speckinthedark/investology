@@ -176,10 +176,10 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
 
   // ─── Agent: create chat session ────────────────────────────────────────────
   app.post('/api/agent/session', async (req, res) => {
-    const { uid, persona = 'buffett' } = req.body as { uid: string; persona?: string };
+    const { uid } = req.body as { uid: string };
     if (!uid) return res.status(400).json({ error: 'uid required' });
     try {
-      const sessionId = await createChatSession(uid, persona);
+      const sessionId = await createChatSession(uid);
       res.json({ sessionId });
     } catch (e) {
       console.error('Session creation error:', e);
@@ -189,11 +189,10 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
 
   // ─── Agent: portfolio risk report (SSE) ───────────────────────────────────
   app.post('/api/agent/report', async (req, res) => {
-    const { uid, holdings, cashBalance, persona = 'buffett' } = req.body as {
+    const { uid, holdings, cashBalance } = req.body as {
       uid: string;
       holdings: Holding[];
       cashBalance: number;
-      persona?: string;
     };
 
     if (!uid || !holdings) return res.status(400).json({ error: 'uid and holdings required' });
@@ -204,7 +203,7 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     res.flushHeaders();
 
     try {
-      for await (const event of runPortfolioReport(uid, holdings, cashBalance, persona)) {
+      for await (const event of runPortfolioReport(uid, holdings, cashBalance)) {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       }
     } catch (e) {
@@ -218,13 +217,12 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
 
   // ─── Agent: research chat (SSE) ───────────────────────────────────────────
   app.post('/api/agent/chat', async (req, res) => {
-    const { uid, sessionId, message, holdings, cashBalance, persona = 'buffett' } = req.body as {
+    const { uid, sessionId, message, holdings, cashBalance } = req.body as {
       uid: string;
       sessionId: string;
       message: string;
       holdings: Holding[];
       cashBalance: number;
-      persona?: string;
     };
 
     if (!uid || !sessionId || !message) {
@@ -237,7 +235,7 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     res.flushHeaders();
 
     const stream = async (sid: string) => {
-      for await (const event of runChat(uid, sid, message, holdings, cashBalance, persona)) {
+      for await (const event of runChat(uid, sid, message, holdings, cashBalance)) {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       }
     };
@@ -247,7 +245,7 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
         await stream(sessionId);
       } catch (e: any) {
         if (e?.message?.includes('Session not found')) {
-          const newSessionId = await createChatSession(uid, persona);
+          const newSessionId = await createChatSession(uid);
           res.write(`data: ${JSON.stringify({ newSessionId })}\n\n`);
           await stream(newSessionId);
         } else {

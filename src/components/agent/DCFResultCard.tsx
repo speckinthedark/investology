@@ -88,7 +88,7 @@ export default function DCFResultCard({ data }: Props) {
   const yMax = Math.ceil(maxVal + pad);
 
   return (
-    <div className="mt-3 bg-zinc-950 border border-zinc-700 rounded-2xl overflow-hidden">
+    <div className="mt-3 bg-zinc-950 border border-zinc-700 rounded-lg overflow-hidden">
       {/* Header */}
       <div className="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
         <span className="text-xs font-black uppercase tracking-widest text-emerald-400">

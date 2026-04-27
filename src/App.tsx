@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LayoutDashboard, ListOrdered, BarChart3, BrainCircuit, RefreshCw } from 'lucide-react';
+import { RefreshCw, ArrowUpDown, CreditCard } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
@@ -9,7 +9,7 @@ import { fetchStockData, fetchPriceHistory } from './services/stockService';
 
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
-import Nav from './components/Nav';
+import Sidebar from './components/Sidebar';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
 import TransactionModal from './components/TransactionModal';
@@ -25,15 +25,8 @@ import { cn } from './lib/utils';
 
 type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive';
 
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'overview',     label: 'Overview',     icon: LayoutDashboard },
-  { id: 'transactions', label: 'Transactions', icon: ListOrdered },
-  { id: 'performance',  label: 'Performance',  icon: BarChart3 },
-  { id: 'deep-dive',    label: 'Deep Dive',    icon: BrainCircuit },
-];
-
 export default function App() {
-  const { user, isReady, selectedPersona, login, logout, updatePersona } = useAuth();
+  const { user, isReady, login, logout } = useAuth();
   const { holdings, transactions, cashBalance, firestoreError, setCashBalance, addTransaction, bulkImportTransactions, deleteTransaction, deleteHolding, clearAllTransactions } = usePortfolio(user);
 
   const [stockPrices, setStockPrices] = useState<Record<string, StockData>>({});
@@ -80,10 +73,6 @@ export default function App() {
     } finally {
       setIsRefreshing(false);
     }
-  };
-
-  const handlePersonaChange = async (persona: typeof selectedPersona) => {
-    await updatePersona(persona);
   };
 
   const totalValue = holdings.reduce((acc, h) => acc + h.shares * (stockPrices[h.ticker]?.price ?? h.averagePrice), 0);
@@ -148,181 +137,172 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-    <div className="min-h-screen bg-zinc-950 text-white font-sans">
-      <Toaster position="top-center" theme="dark" richColors />
+      <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr', height: '100vh' }}>
+        <Toaster position="top-center" theme="dark" richColors />
 
-      {firestoreError && (
-        <div className="bg-rose-950/80 border-b border-rose-800 px-4 py-3 text-sm text-rose-300 flex items-start gap-2">
-          <span className="font-bold shrink-0">Firestore error:</span>
-          <span className="font-mono text-xs">{firestoreError}</span>
-        </div>
-      )}
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onLogout={logout}
+          user={user}
+          isRefreshing={isRefreshing}
+          onRefresh={refreshPrices}
+        />
 
-      <Nav user={user} isRefreshing={isRefreshing} onRefresh={refreshPrices} onLogout={logout} />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Portfolio Header */}
-        <div className="bg-zinc-900 rounded-[32px] p-6 sm:p-8 border border-zinc-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Total Portfolio Value</div>
-            <div className="text-4xl md:text-5xl font-light tracking-tighter mb-4">
-              ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {/* Main column */}
+        <div className="flex flex-col overflow-hidden">
+          {firestoreError && (
+            <div className="bg-rose-950/80 border-b border-rose-800 px-4 py-3 text-sm text-rose-300 flex items-start gap-2 shrink-0">
+              <span className="font-bold shrink-0">Firestore error:</span>
+              <span className="font-mono text-xs">{firestoreError}</span>
             </div>
-            <div className="flex flex-wrap items-center gap-6">
-              <div>
-                <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold block">Cash</span>
-                <span className="text-lg font-black tracking-tighter text-blue-400">
-                  ${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
+          )}
+
+          {/* Persistent KPI header */}
+          <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
+              <div className="text-6xl font-light tracking-tighter text-white mb-4">
+                ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className={cn('flex flex-col', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Total Gain</span>
-                <span className="font-semibold">
-                  {totalPortfolioGain >= 0 ? '+' : ''}${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  {' '}({totalPortfolioGainPct.toFixed(2)}%)
-                </span>
+              <div className="flex items-center gap-8">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Cash</div>
+                  <div className="text-base font-black text-blue-400">
+                    ${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Total Gain</div>
+                  <div className={cn('text-base font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                    {totalPortfolioGain >= 0 ? '+' : ''}${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {' '}({totalPortfolioGainPct.toFixed(2)}%)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Today</div>
+                  <div className={cn('text-base font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                    {totalDayChange >= 0 ? '+' : ''}${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {' '}({totalDayChangePct.toFixed(2)}%)
+                  </div>
+                </div>
               </div>
-              <div className={cn('flex flex-col', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Today</span>
-                <span className="font-semibold">
-                  {totalDayChange >= 0 ? '+' : ''}${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  {' '}({totalDayChangePct.toFixed(2)}%)
-                </span>
-              </div>
+            </div>
+
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => openModal('buy')}
+                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-white rounded-xl font-bold hover:bg-zinc-700 transition-all text-[11px] uppercase tracking-widest"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                Trade Asset
+              </button>
+              <button
+                onClick={() => setShowCashModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all text-[11px] uppercase tracking-widest"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                Edit Cash
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full md:w-auto">
-            <button
-              onClick={() => openModal('buy')}
-              className="flex-1 md:flex-none px-6 py-3 bg-white text-zinc-900 rounded-2xl font-bold hover:bg-zinc-100 transition-all text-xs uppercase tracking-widest"
-            >
-              Trade Asset
-            </button>
-            <button
-              onClick={() => setShowCashModal(true)}
-              className="flex-1 md:flex-none px-6 py-3 bg-blue-950/50 text-blue-400 border border-blue-900/50 rounded-2xl font-bold hover:bg-blue-950 transition-all text-xs uppercase tracking-widest"
-            >
-              Edit Cash
-            </button>
+          {/* Scrollable tab content */}
+          <div className="flex-1 overflow-y-auto">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+                className="p-6"
+              >
+                {activeTab === 'overview' && (
+                  <OverviewTab
+                    holdings={holdings}
+                    stockPrices={stockPrices}
+                    cashBalance={cashBalance}
+                    totalPortfolioValue={totalPortfolioValue}
+                    onDeleteHolding={handleDeleteHolding}
+                    onSelectAsset={setSelectedAsset}
+                  />
+                )}
+                {activeTab === 'transactions' && (
+                  <TransactionsTab
+                    transactions={transactions}
+                    onEdit={(tx) => openModal(tx.type, tx)}
+                    onDelete={handleDeleteTransaction}
+                    onAddTrade={() => openModal('buy')}
+                    onAddCash={() => openModal('deposit')}
+                    onImport={() => setShowImportGuide(true)}
+                    onExport={handleExport}
+                    onClearAll={handleClearAll}
+                  />
+                )}
+                {activeTab === 'performance' && (
+                  <PerformanceTab
+                    transactions={transactions}
+                    priceHistory={priceHistory}
+                    isPriceHistoryLoading={isPriceHistoryLoading}
+                    totalStockValue={totalValue}
+                    totalCostBasis={totalCostBasis}
+                  />
+                )}
+                {activeTab === 'deep-dive' && (
+                  // @ts-ignore — InsightsTab Props will be updated in a follow-up task
+                  <InsightsTab
+                    {...{ uid: user.uid, holdings, stockPrices, cashBalance } as any}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex overflow-x-auto gap-1.5 border-b border-zinc-800 pb-1">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id)}
-              className={cn(
-                'flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all outline-none',
-                activeTab === id
-                  ? 'bg-white text-zinc-900 shadow-lg'
-                  : 'text-zinc-500 hover:bg-zinc-800 hover:text-white'
-              )}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
-        </div>
+        {modal.open && (
+          <TransactionModal
+            initialType={modal.type}
+            editingTransaction={modal.editing}
+            onSubmit={addTransaction}
+            onClose={closeModal}
+          />
+        )}
 
-        {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.15 }}
-          >
-            {activeTab === 'overview' && (
-              <OverviewTab
-                holdings={holdings}
-                stockPrices={stockPrices}
-                cashBalance={cashBalance}
-                totalPortfolioValue={totalPortfolioValue}
-                onDeleteHolding={handleDeleteHolding}
-                onSelectAsset={setSelectedAsset}
-              />
-            )}
-            {activeTab === 'transactions' && (
-              <TransactionsTab
-                transactions={transactions}
-                onEdit={(tx) => openModal(tx.type, tx)}
-                onDelete={handleDeleteTransaction}
-                onAddTrade={() => openModal('buy')}
-                onAddCash={() => openModal('deposit')}
-                onImport={() => setShowImportGuide(true)}
-                onExport={handleExport}
-                onClearAll={handleClearAll}
-              />
-            )}
-            {activeTab === 'performance' && (
-              <PerformanceTab
-                transactions={transactions}
-                priceHistory={priceHistory}
-                isPriceHistoryLoading={isPriceHistoryLoading}
-                totalStockValue={totalValue}
-                totalCostBasis={totalCostBasis}
-              />
-            )}
-            {activeTab === 'deep-dive' && (
-              <InsightsTab
-                uid={user.uid}
-                holdings={holdings}
-                cashBalance={cashBalance}
-                selectedPersona={selectedPersona}
-                onPersonaChange={handlePersonaChange}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+        {confirmAction && (
+          <ConfirmDialog
+            message={confirmAction.message}
+            onConfirm={confirmAction.onConfirm}
+            onCancel={() => setConfirmAction(null)}
+          />
+        )}
 
-      {modal.open && (
-        <TransactionModal
-          initialType={modal.type}
-          editingTransaction={modal.editing}
-          onSubmit={addTransaction}
-          onClose={closeModal}
-        />
-      )}
+        {selectedAsset && (
+          <AssetDetailPanel
+            ticker={selectedAsset}
+            stockData={stockPrices[selectedAsset]}
+            transactions={transactions}
+            onClose={() => setSelectedAsset(null)}
+          />
+        )}
 
-      {confirmAction && (
-        <ConfirmDialog
-          message={confirmAction.message}
-          onConfirm={confirmAction.onConfirm}
-          onCancel={() => setConfirmAction(null)}
-        />
-      )}
+        {showCashModal && (
+          <CashBalanceModal
+            currentBalance={cashBalance}
+            onSave={async (amount) => { await setCashBalance(amount); setShowCashModal(false); }}
+            onClose={() => setShowCashModal(false)}
+          />
+        )}
 
-      {selectedAsset && (
-        <AssetDetailPanel
-          ticker={selectedAsset}
-          stockData={stockPrices[selectedAsset]}
-          transactions={transactions}
-          onClose={() => setSelectedAsset(null)}
-        />
-      )}
-
-      {showCashModal && (
-        <CashBalanceModal
-          currentBalance={cashBalance}
-          onSave={async (amount) => { await setCashBalance(amount); setShowCashModal(false); }}
-          onClose={() => setShowCashModal(false)}
-        />
-      )}
-
-      {showImportGuide && (
-        <ImportGuidePanel
-          onClose={() => setShowImportGuide(false)}
-          onImportTransactions={async (txs) => { await bulkImportTransactions(txs); }}
-          onSetCash={async (amount) => { await setCashBalance(amount); }}
-          existingHoldings={holdings}
-        />
-      )}
-    </div>
+        {showImportGuide && (
+          <ImportGuidePanel
+            onClose={() => setShowImportGuide(false)}
+            onImportTransactions={async (txs) => { await bulkImportTransactions(txs); }}
+            onSetCash={async (amount) => { await setCashBalance(amount); }}
+            existingHoldings={holdings}
+          />
+        )}
+      </div>
     </ErrorBoundary>
   );
 }

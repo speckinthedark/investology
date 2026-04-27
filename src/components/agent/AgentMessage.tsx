@@ -34,7 +34,7 @@ export default function AgentMessage({ message }: Props) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] bg-white text-zinc-900 rounded-2xl rounded-tr-sm px-4 py-3 text-sm font-medium">
+        <div className="max-w-[80%] bg-white text-zinc-900 rounded-lg rounded-tr-sm px-4 py-3 text-sm font-medium">
           {message.text}
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function AgentMessage({ message }: Props) {
       <span className={cn('text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full w-fit', colorClass)}>
         {label}
       </span>
-      <div className="max-w-[90%] bg-zinc-800/60 border border-zinc-700/50 rounded-2xl rounded-tl-sm px-4 py-3">
+      <div className="max-w-[90%] bg-zinc-800/60 border border-zinc-700/50 rounded-lg rounded-tl-sm px-4 py-3">
         <div className="text-sm text-zinc-300 leading-relaxed prose-agent">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
