@@ -1,4 +1,4 @@
-import { StockData, PriceHistory } from '../types';
+import { StockData, PriceHistory, StockDetail } from '../types';
 
 export async function fetchStockData(ticker: string): Promise<StockData> {
   try {
@@ -52,4 +52,14 @@ function mockStockData(ticker: string): StockData {
       price: parseFloat((base + (Math.random() - 0.5) * 10).toFixed(2)),
     })),
   };
+}
+
+export async function fetchStockDetail(ticker: string): Promise<StockDetail> {
+  const res = await fetch(`/api/stock/detail/${encodeURIComponent(ticker.toUpperCase())}`);
+  if (res.status === 400) {
+    const data = await res.json();
+    throw new Error(data.error ?? 'Ticker not found');
+  }
+  if (!res.ok) throw new Error('Failed to fetch stock data');
+  return res.json();
 }
