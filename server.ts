@@ -194,6 +194,57 @@ async function startServer() {
     }
   });
 
+  // --- Yahoo Finance Insights for Research tab ---
+  app.get('/api/stock/insights/:ticker', async (req, res) => {
+    const ticker = (req.params.ticker as string).toUpperCase();
+    try {
+      const raw = await yahooFinance.insights(ticker, { reportsCount: 0 });
+
+      res.json({
+        recommendation: raw.recommendation
+          ? {
+              rating: raw.recommendation.rating,
+              targetPrice: raw.recommendation.targetPrice ?? null,
+              provider: raw.recommendation.provider,
+            }
+          : null,
+        valuation: raw.instrumentInfo?.valuation
+          ? {
+              description: raw.instrumentInfo.valuation.description ?? null,
+              discount: raw.instrumentInfo.valuation.discount ?? null,
+              relativeValue: raw.instrumentInfo.valuation.relativeValue ?? null,
+              provider: raw.instrumentInfo.valuation.provider,
+            }
+          : null,
+        technicalEvents: raw.instrumentInfo?.technicalEvents
+          ? {
+              shortTermOutlook: raw.instrumentInfo.technicalEvents.shortTermOutlook,
+              intermediateTermOutlook: raw.instrumentInfo.technicalEvents.intermediateTermOutlook,
+              longTermOutlook: raw.instrumentInfo.technicalEvents.longTermOutlook,
+            }
+          : null,
+        keyTechnicals: raw.instrumentInfo?.keyTechnicals
+          ? {
+              support: raw.instrumentInfo.keyTechnicals.support ?? null,
+              resistance: raw.instrumentInfo.keyTechnicals.resistance ?? null,
+              stopLoss: raw.instrumentInfo.keyTechnicals.stopLoss ?? null,
+              provider: raw.instrumentInfo.keyTechnicals.provider,
+            }
+          : null,
+        upsell: raw.upsell
+          ? {
+              bullishSummary: raw.upsell.msBullishSummary ?? null,
+              bearishSummary: raw.upsell.msBearishSummary ?? null,
+              companyName: raw.upsell.companyName ?? null,
+            }
+          : null,
+      });
+    } catch (e) {
+      console.error('Insights error:', e);
+      res.status(500).json({ error: 'Failed to fetch insights' });
+    }
+  });
+
   // --- Stock quote + 7-day sparkline ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
