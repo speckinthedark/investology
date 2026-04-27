@@ -51,3 +51,53 @@ export interface StoredReport {
   data: Record<string, unknown>;
   generatedAt: Date;
 }
+
+export interface FinancialPeriod {
+  label: string;  // e.g. "FY2024" or "Q3 2024"
+  value: number;  // raw dollars
+}
+
+export interface StockDetail {
+  // Identity
+  ticker: string;
+  companyName: string;
+  exchange: string;          // human-readable, e.g. "NASDAQ"
+  tvSymbol: string;          // TradingView format, e.g. "NASDAQ:AAPL"
+  sector: string;
+  industry: string;
+  country: string;
+  website: string;
+  fullTimeEmployees: number;
+  longBusinessSummary: string;
+
+  // Price
+  price: number;
+  change: number;
+  changePercent: number;
+
+  // Trading snapshot
+  marketCap: number | null;
+  volume: number | null;
+  averageVolume: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  beta: number | null;
+
+  // Fundamentals
+  trailingPE: number | null;
+  forwardPE: number | null;
+  trailingEps: number | null;
+  dividendYield: number | null;
+  profitMargins: number | null;
+  operatingMargins: number | null;
+  returnOnEquity: number | null;
+  freeCashflow: number | null;
+
+  // Financial history (for bar chart)
+  annualRevenue: FinancialPeriod[];
+  annualNetIncome: FinancialPeriod[];
+  annualFreeCashFlow: FinancialPeriod[];
+  quarterlyRevenue: FinancialPeriod[];
+  quarterlyNetIncome: FinancialPeriod[];
+  quarterlyFreeCashFlow: FinancialPeriod[];
+}
