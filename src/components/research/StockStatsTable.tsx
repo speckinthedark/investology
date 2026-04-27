@@ -67,8 +67,8 @@ export default function StockStatsTable({ detail }: Props) {
       <Row label="Market Cap"  value={fmtLarge(detail.marketCap)} />
       <Row label="Volume"      value={fmtNum(detail.volume)} />
       <Row label="Avg. Volume" value={fmtNum(detail.averageVolume)} color="muted" />
-      <Row label="52W High"    value={detail.fiftyTwoWeekHigh !== null ? `$${detail.fiftyTwoWeekHigh.toFixed(2)}` : '—'} color="green" />
-      <Row label="52W Low"     value={detail.fiftyTwoWeekLow  !== null ? `$${detail.fiftyTwoWeekLow.toFixed(2)}`  : '—'} color="red" />
+      <Row label="52W High"    value={detail.fiftyTwoWeekHigh !== null ? `$${detail.fiftyTwoWeekHigh.toFixed(2)}` : '—'} color={detail.fiftyTwoWeekHigh !== null ? 'green' : undefined} />
+      <Row label="52W Low"     value={detail.fiftyTwoWeekLow  !== null ? `$${detail.fiftyTwoWeekLow.toFixed(2)}`  : '—'} color={detail.fiftyTwoWeekLow  !== null ? 'red'   : undefined} />
       <Row label="Beta"        value={detail.beta !== null ? detail.beta.toFixed(2) : '—'} />
 
       <SectionHeader label="Fundamentals" />

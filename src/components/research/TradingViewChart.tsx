@@ -21,16 +21,22 @@ interface Props {
 }
 
 let tvScriptLoaded = false;
+let tvScriptPromise: Promise<void> | null = null;
 
 function loadTVScript(): Promise<void> {
   if (tvScriptLoaded) return Promise.resolve();
-  return new Promise((resolve) => {
+  if (tvScriptPromise) return tvScriptPromise;
+  tvScriptPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = 'https://s3.tradingview.com/tv.js';
     script.onload = () => { tvScriptLoaded = true; resolve(); };
+    script.onerror = () => { tvScriptPromise = null; reject(new Error('Failed to load TradingView script')); };
     document.head.appendChild(script);
   });
+  return tvScriptPromise;
 }
+
+const TV_CONTAINER_ID = 'tv_chart_container';
 
 export default function TradingViewChart({ tvSymbol }: Props) {
   const [timeframe, setTimeframe] = useState<Timeframe>('1M');
@@ -38,9 +44,9 @@ export default function TradingViewChart({ tvSymbol }: Props) {
   const widgetRef = useRef<any>(null);
 
   useEffect(() => {
-    const containerId = 'tv_chart_container';
+    let cancelled = false;
     loadTVScript().then(() => {
-      if (!containerRef.current) return;
+      if (cancelled || !containerRef.current) return;
       containerRef.current.innerHTML = '';
       widgetRef.current = new window.TradingView.widget({
         autosize: true,
@@ -53,12 +59,13 @@ export default function TradingViewChart({ tvSymbol }: Props) {
         hide_side_toolbar: true,
         allow_symbol_change: false,
         save_image: false,
-        container_id: containerId,
+        container_id: TV_CONTAINER_ID,
         toolbar_bg: '#18181b',
         backgroundColor: '#18181b',
         gridColor: '#27272a',
       });
-    });
+    }).catch(console.error);
+    return () => { cancelled = true; };
   }, [tvSymbol, timeframe]);
 
   return (
@@ -80,7 +87,7 @@ export default function TradingViewChart({ tvSymbol }: Props) {
           ))}
         </div>
       </div>
-      <div id="tv_chart_container" ref={containerRef} style={{ height: '400px' }} />
+      <div id={TV_CONTAINER_ID} ref={containerRef} style={{ height: '400px' }} />
     </div>
   );
 }
