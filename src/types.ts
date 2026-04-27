@@ -51,3 +51,92 @@ export interface StoredReport {
   data: Record<string, unknown>;
   generatedAt: Date;
 }
+
+export interface FinancialPeriod {
+  label: string;  // e.g. "FY2024" or "Q3 2024"
+  value: number;  // raw dollars
+}
+
+export interface StockDetail {
+  // Identity
+  ticker: string;
+  companyName: string;
+  exchange: string;          // human-readable, e.g. "NASDAQ"
+  tvSymbol: string;          // TradingView format, e.g. "NASDAQ:AAPL"
+  sector: string;
+  industry: string;
+  country: string;
+  website: string;
+  fullTimeEmployees: number;
+  longBusinessSummary: string;
+
+  // Price
+  price: number;
+  change: number;
+  changePercent: number;
+
+  // Trading snapshot
+  marketCap: number | null;
+  volume: number | null;
+  averageVolume: number | null;
+  dayLow: number | null;
+  dayHigh: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  fiftyDayAverage: number | null;
+  twoHundredDayAverage: number | null;
+  beta: number | null;
+  sharesOutstanding: number | null;
+  floatShares: number | null;
+  shortRatio: number | null;
+  shortPercentOfFloat: number | null;
+
+  // Fundamentals
+  trailingPE: number | null;
+  forwardPE: number | null;
+  trailingEps: number | null;
+  pegRatio: number | null;
+  priceToSalesTrailing12Months: number | null;
+  priceToBook: number | null;
+  dividendYield: number | null;
+  totalRevenue: number | null;
+  revenueGrowth: number | null;
+  ebitda: number | null;
+  profitMargins: number | null;
+  operatingMargins: number | null;
+  returnOnEquity: number | null;
+  returnOnAssets: number | null;
+  freeCashflow: number | null;
+  totalDebt: number | null;
+  debtToEquity: number | null;
+  currentRatio: number | null;
+  quickRatio: number | null;
+
+  // Financial history (for bar chart)
+  // Annual — Income Statement
+  annualRevenue: FinancialPeriod[];
+  annualGrossProfit: FinancialPeriod[];
+  annualNetIncome: FinancialPeriod[];
+  // Annual — Balance Sheet
+  annualTotalAssets: FinancialPeriod[];
+  annualTotalLiabilities: FinancialPeriod[];
+  annualNetCash: FinancialPeriod[];
+  // Annual — Cash Flow
+  annualOperatingCashFlow: FinancialPeriod[];
+  annualInvestingCashFlow: FinancialPeriod[];
+  annualFinancingCashFlow: FinancialPeriod[];
+  annualFreeCashFlow: FinancialPeriod[];
+  // Quarterly — Income Statement
+  quarterlyRevenue: FinancialPeriod[];
+  quarterlyGrossProfit: FinancialPeriod[];
+  quarterlyNetIncome: FinancialPeriod[];
+  // Quarterly — Balance Sheet
+  quarterlyTotalAssets: FinancialPeriod[];
+  quarterlyTotalLiabilities: FinancialPeriod[];
+  quarterlyNetCash: FinancialPeriod[];
+  // Quarterly — Cash Flow
+  quarterlyOperatingCashFlow: FinancialPeriod[];
+  quarterlyInvestingCashFlow: FinancialPeriod[];
+  quarterlyFinancingCashFlow: FinancialPeriod[];
+  quarterlyFreeCashFlow: FinancialPeriod[];
+}

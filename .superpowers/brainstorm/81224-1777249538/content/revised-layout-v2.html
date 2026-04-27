@@ -1,0 +1,240 @@
+<style>
+  * { box-sizing: border-box; }
+  .page { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; font-family: sans-serif; }
+
+  .search-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: #27272a; border: 1.5px solid #3f3f46; border-radius: 10px;
+    padding: 10px 16px; color: #71717a; font-size: 13px;
+  }
+  .ticker-typed { color: #fff; font-weight: 700; }
+  .hint { margin-left: auto; font-size: 10px; color: #52525b; font-weight: 600; letter-spacing: 0.05em; }
+
+  .hero {
+    background: #27272a; border: 1px solid #3f3f46; border-radius: 10px;
+    padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .hero-left { display: flex; align-items: center; gap: 12px; }
+  .logo-box { width: 38px; height: 38px; background: #3f3f46; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #71717a; font-size: 9px; font-weight: 800; }
+  .company-name { font-size: 16px; font-weight: 800; color: #fff; }
+  .company-meta { font-size: 10px; color: #71717a; margin-top: 3px; display: flex; gap: 5px; }
+  .pill { background: #3f3f46; color: #a1a1aa; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 700; }
+  .price { font-size: 26px; font-weight: 300; color: #fff; letter-spacing: -0.03em; text-align: right; }
+  .change-pos { font-size: 11px; color: #34d399; font-weight: 700; text-align: right; margin-top: 2px; }
+
+  .callout {
+    background: #1c2033; border: 1px solid #3b4a6b; border-radius: 10px;
+    padding: 10px 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .callout-dot { width: 7px; height: 7px; background: #818cf8; border-radius: 50%; flex-shrink: 0; }
+  .callout-text { font-size: 11px; color: #a5b4fc; flex: 1; }
+  .callout-text strong { color: #c7d2fe; }
+  .callout-gain { font-size: 11px; font-weight: 700; color: #34d399; }
+
+  .price-chart {
+    background: #1c1c1e; border: 1px solid #3f3f46; border-radius: 10px; overflow: hidden;
+  }
+  .chart-header {
+    padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #27272a;
+  }
+  .chart-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #71717a; }
+  .tab-row { display: flex; gap: 3px; }
+  .tab { padding: 3px 9px; border-radius: 5px; font-size: 10px; font-weight: 700; background: #27272a; color: #71717a; border: none; cursor: pointer; }
+  .tab.active { background: #fff; color: #18181b; }
+  .chart-body {
+    height: 200px; display: flex; align-items: center; justify-content: center;
+    color: #3f3f46; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; flex-direction: column; gap: 5px;
+  }
+  .chart-body small { font-size: 9px; color: #3f3f46; }
+
+  /* Two-column — stats narrower, financials wider */
+  .two-col { display: grid; grid-template-columns: 5fr 8fr; gap: 14px; }
+
+  .stats-panel {
+    background: #27272a; border: 1px solid #3f3f46; border-radius: 10px; overflow: hidden;
+  }
+  .stats-section-header {
+    padding: 7px 12px; background: #1f1f22; border-bottom: 1px solid #3f3f46;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #52525b;
+  }
+  .stats-row {
+    display: grid; grid-template-columns: 1fr auto;
+    padding: 7px 12px; border-bottom: 1px solid #27272a33; align-items: center;
+  }
+  .stats-row:last-child { border-bottom: none; }
+  .stats-key { font-size: 10px; color: #71717a; }
+  .stats-val { font-size: 10px; font-weight: 700; color: #e4e4e7; text-align: right; }
+  .stats-val.green { color: #34d399; }
+  .stats-val.red { color: #f87171; }
+  .stats-val.muted { color: #71717a; font-weight: 400; }
+
+  .fin-panel {
+    background: #27272a; border: 1px solid #3f3f46; border-radius: 10px; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .fin-header {
+    padding: 10px 14px; border-bottom: 1px solid #3f3f46;
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  }
+  .fin-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #71717a; }
+  .toggle-group { display: flex; background: #1f1f22; border-radius: 6px; padding: 2px; gap: 2px; }
+  .toggle-btn { padding: 3px 9px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; color: #52525b; background: transparent; border: none; cursor: pointer; text-transform: uppercase; }
+  .toggle-btn.active { background: #3f3f46; color: #e4e4e7; }
+  .metric-tabs { display: flex; gap: 4px; padding: 8px 14px; border-bottom: 1px solid #3f3f46; }
+  .metric-tab { padding: 3px 10px; border-radius: 5px; font-size: 9px; font-weight: 700; border: 1px solid #3f3f46; color: #71717a; background: transparent; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-tab.active { border-color: #a78bfa; color: #a78bfa; background: #2e1f4a44; }
+
+  .bar-chart { padding: 16px 18px 12px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .bars-area { display: flex; align-items: flex-end; gap: 14px; flex: 1; min-height: 180px; }
+  .bar-group { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; }
+  .bar-wrap { display: flex; align-items: flex-end; width: 100%; justify-content: center; height: 170px; }
+  .bar { width: 60%; border-radius: 4px 4px 0 0; position: relative; display: flex; align-items: flex-start; justify-content: center; padding-top: 5px; }
+  .bar-val { font-size: 9px; font-weight: 700; color: #e4e4e7; white-space: nowrap; }
+  .bar-year { font-size: 9px; color: #52525b; font-weight: 600; }
+  .source-note { font-size: 9px; color: #3f3f46; text-align: right; }
+</style>
+
+<h2>Stock Overview — Layout v2</h2>
+<p class="subtitle">Stats table narrower · Financials chart wider.</p>
+
+<div class="page">
+
+  <div class="search-bar">
+    <span>⌕</span>
+    <span>Search ticker — <span class="ticker-typed">AAPL</span></span>
+    <span class="hint">PRESS ENTER</span>
+  </div>
+
+  <div class="hero">
+    <div class="hero-left">
+      <div class="logo-box">AAPL</div>
+      <div>
+        <div class="company-name">Apple Inc.</div>
+        <div class="company-meta">
+          <span class="pill">NASDAQ</span>
+          <span class="pill">Technology</span>
+          <span class="pill">Consumer Electronics</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="price">$213.49</div>
+      <div class="change-pos">▲ +$2.14 (+1.01%) today</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-dot"></div>
+    <div class="callout-text"><strong>You hold 12 shares</strong> · avg. cost $185.20 · current value $2,561.88</div>
+    <div class="callout-gain">+$339.48 (+15.3%)</div>
+  </div>
+
+  <div class="price-chart">
+    <div class="chart-header">
+      <span class="chart-label">Price Chart · TradingView</span>
+      <div class="tab-row">
+        <button class="tab active">1W</button>
+        <button class="tab">1M</button>
+        <button class="tab">3M</button>
+        <button class="tab">1Y</button>
+        <button class="tab">5Y</button>
+      </div>
+    </div>
+    <div class="chart-body">
+      <span>TradingView Advanced Chart</span>
+      <small>Dark theme · no toolbar · synced to ticker</small>
+    </div>
+  </div>
+
+  <div class="two-col">
+
+    <!-- Stats table (narrower) -->
+    <div class="stats-panel">
+      <div class="stats-section-header">Trading Snapshot</div>
+      <div class="stats-row"><span class="stats-key">Market Cap</span><span class="stats-val">$3.21T</span></div>
+      <div class="stats-row"><span class="stats-key">Volume</span><span class="stats-val">48.2M</span></div>
+      <div class="stats-row"><span class="stats-key">Avg. Volume</span><span class="stats-val muted">56.1M</span></div>
+      <div class="stats-row"><span class="stats-key">52W High</span><span class="stats-val green">$237.49</span></div>
+      <div class="stats-row"><span class="stats-key">52W Low</span><span class="stats-val red">$164.08</span></div>
+      <div class="stats-row"><span class="stats-key">Beta</span><span class="stats-val">1.24</span></div>
+
+      <div class="stats-section-header">Fundamentals</div>
+      <div class="stats-row"><span class="stats-key">P/E (TTM)</span><span class="stats-val">32.4x</span></div>
+      <div class="stats-row"><span class="stats-key">Forward P/E</span><span class="stats-val">28.1x</span></div>
+      <div class="stats-row"><span class="stats-key">EPS (TTM)</span><span class="stats-val">$6.57</span></div>
+      <div class="stats-row"><span class="stats-key">Profit Margin</span><span class="stats-val green">24.3%</span></div>
+      <div class="stats-row"><span class="stats-key">Div. Yield</span><span class="stats-val muted">0.52%</span></div>
+
+      <div class="stats-section-header">Company</div>
+      <div class="stats-row"><span class="stats-key">Industry</span><span class="stats-val">Electronics</span></div>
+      <div class="stats-row"><span class="stats-key">Employees</span><span class="stats-val">164,000</span></div>
+      <div class="stats-row"><span class="stats-key">ROE</span><span class="stats-val green">147%</span></div>
+      <div class="stats-row"><span class="stats-key">Free Cash Flow</span><span class="stats-val">$108.8B</span></div>
+      <div class="stats-row"><span class="stats-key">Op. Margin</span><span class="stats-val green">31.5%</span></div>
+      <div class="stats-row"><span class="stats-key">Website</span><span class="stats-val muted">apple.com</span></div>
+    </div>
+
+    <!-- Financials chart (wider) -->
+    <div class="fin-panel">
+      <div class="fin-header">
+        <span class="fin-label">Financials</span>
+        <div class="toggle-group">
+          <button class="toggle-btn active">Annual</button>
+          <button class="toggle-btn">Quarterly</button>
+        </div>
+      </div>
+      <div class="metric-tabs">
+        <button class="metric-tab active">Revenue</button>
+        <button class="metric-tab">Net Income</button>
+        <button class="metric-tab">Free Cash Flow</button>
+      </div>
+      <div class="bar-chart">
+        <div class="bars-area">
+          <div class="bar-group">
+            <div class="bar-wrap">
+              <div class="bar" style="height:65%;background:linear-gradient(to top,#6d28d9,#8b5cf6);">
+                <span class="bar-val">$274B</span>
+              </div>
+            </div>
+            <span class="bar-year">FY2021</span>
+          </div>
+          <div class="bar-group">
+            <div class="bar-wrap">
+              <div class="bar" style="height:79%;background:linear-gradient(to top,#6d28d9,#8b5cf6);">
+                <span class="bar-val">$365B</span>
+              </div>
+            </div>
+            <span class="bar-year">FY2022</span>
+          </div>
+          <div class="bar-group">
+            <div class="bar-wrap">
+              <div class="bar" style="height:83%;background:linear-gradient(to top,#6d28d9,#8b5cf6);">
+                <span class="bar-val">$383B</span>
+              </div>
+            </div>
+            <span class="bar-year">FY2023</span>
+          </div>
+          <div class="bar-group">
+            <div class="bar-wrap">
+              <div class="bar" style="height:100%;background:linear-gradient(to top,#6d28d9,#8b5cf6);">
+                <span class="bar-val">$391B</span>
+              </div>
+            </div>
+            <span class="bar-year">FY2024</span>
+          </div>
+          <div class="bar-group">
+            <div class="bar-wrap">
+              <div class="bar" style="height:100%;background:transparent;opacity:0.45;border:1.5px dashed #a78bfa;border-bottom:none;border-radius:4px 4px 0 0;">
+                <span class="bar-val" style="color:#a78bfa">$411B</span>
+              </div>
+            </div>
+            <span class="bar-year" style="color:#a78bfa">FY2025E</span>
+          </div>
+        </div>
+        <div class="source-note">Yahoo Finance · Est. from analyst consensus</div>
+      </div>
+    </div>
+
+  </div>
+</div>

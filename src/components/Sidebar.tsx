@@ -1,14 +1,15 @@
-import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw, Search } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { cn } from '../lib/utils';
 
-type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive';
+type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'overview',      label: 'Overview',     icon: LayoutDashboard },
-  { id: 'transactions',  label: 'Transactions', icon: ArrowUpDown },
-  { id: 'performance',   label: 'Performance',  icon: TrendingUp },
-  { id: 'deep-dive',     label: 'Deep Dive',    icon: BrainCircuit },
+  { id: 'overview',     label: 'Overview',     icon: LayoutDashboard },
+  { id: 'transactions', label: 'Transactions', icon: ArrowUpDown },
+  { id: 'performance',  label: 'Performance',  icon: TrendingUp },
+  { id: 'research',     label: 'Research',     icon: Search },
 ];
 
 interface Props {
@@ -21,6 +22,8 @@ interface Props {
 }
 
 export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefreshing, onRefresh }: Props) {
+  const [pinned, setPinned] = useState(false);
+
   const initials = (user.email ?? user.displayName ?? '?')
     .split(/[@.\s]/)
     .filter(Boolean)
@@ -30,26 +33,38 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
 
   const email = user.email ?? user.displayName ?? '';
 
+  const handleTabChange = (tab: Tab) => {
+    onTabChange(tab);
+    setPinned(false);
+  };
+
+  const labelClass = cn(
+    'text-[11px] font-bold uppercase tracking-widest whitespace-nowrap transition-opacity duration-150',
+    pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+  );
+
   return (
     <div
       className={cn(
         'group fixed left-0 top-0 h-full z-20',
         'bg-zinc-900 border-r border-zinc-800',
         'flex flex-col',
-        'w-16 hover:w-[220px]',
+        pinned ? 'w-[220px]' : 'w-16 hover:w-[220px]',
         'transition-[width] duration-200 ease-in-out',
         'overflow-hidden',
       )}
     >
-      {/* Logo block */}
-      <div className="h-14 flex items-center px-4 shrink-0 gap-3 border-b border-zinc-800">
-        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shrink-0">
-          <span className="text-zinc-900 font-black text-xs">IN</span>
-        </div>
+      {/* Logo block — tap to pin/unpin on mobile */}
+      <div
+        className="h-14 flex items-center px-4 shrink-0 gap-3 border-b border-zinc-800 cursor-pointer select-none"
+        onClick={() => setPinned((v) => !v)}
+      >
+        <img src="/logo.png" alt="Investology" className="w-8 h-8 shrink-0 rounded-xl object-contain" />
         <span
           className={cn(
             'font-black text-sm tracking-tighter uppercase italic text-white',
-            'opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap',
+            pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+            'transition-opacity duration-150 whitespace-nowrap',
           )}
         >
           Investology
@@ -63,7 +78,7 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
           return (
             <button
               key={id}
-              onClick={() => onTabChange(id)}
+              onClick={() => handleTabChange(id)}
               style={isActive ? { boxShadow: 'inset 3px 0 0 #a78bfa' } : undefined}
               className={cn(
                 'flex items-center gap-3 px-4 py-2.5 w-full text-left transition-all',
@@ -73,17 +88,34 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
               )}
             >
               <Icon className="w-5 h-5 shrink-0" />
-              <span
-                className={cn(
-                  'text-[11px] font-bold uppercase tracking-widest whitespace-nowrap',
-                  'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
-                )}
-              >
-                {label}
-              </span>
+              <span className={labelClass}>{label}</span>
             </button>
           );
         })}
+
+        {/* Deep Dive — coming soon, pinned at the bottom of the nav */}
+        <div className="flex-1" />
+        <div className="mx-3 mb-1 border-t border-zinc-800/60" />
+        <button
+          onClick={() => handleTabChange('deep-dive')}
+          className={cn(
+            'flex items-center gap-3 px-4 py-2.5 w-full text-left transition-all opacity-40 hover:opacity-60',
+            activeTab === 'deep-dive' && 'bg-zinc-800/50',
+          )}
+        >
+          <BrainCircuit className="w-5 h-5 shrink-0 text-zinc-500" />
+          <div className={cn(
+            'flex items-center gap-2 transition-opacity duration-150',
+            pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+          )}>
+            <span className="text-[11px] font-bold uppercase tracking-widest whitespace-nowrap text-zinc-500">
+              Deep Dive
+            </span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded-full">
+              Soon
+            </span>
+          </div>
+        </button>
       </nav>
 
       {/* Bottom controls */}
@@ -96,14 +128,7 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
           className="flex items-center gap-3 px-4 py-2.5 w-full text-left text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300 transition-all disabled:opacity-40"
         >
           <RefreshCw className={cn('w-5 h-5 shrink-0', isRefreshing && 'animate-spin')} />
-          <span
-            className={cn(
-              'text-[11px] font-bold uppercase tracking-widest whitespace-nowrap',
-              'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
-            )}
-          >
-            Refresh Prices
-          </span>
+          <span className={labelClass}>Refresh Prices</span>
         </button>
 
         {/* User avatar */}
@@ -114,7 +139,8 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
           <span
             className={cn(
               'text-[11px] text-zinc-400 whitespace-nowrap truncate max-w-[140px]',
-              'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+              pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+              'transition-opacity duration-150',
             )}
           >
             {email}
@@ -127,14 +153,7 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
           className="flex items-center gap-3 px-4 py-2.5 w-full text-left text-zinc-500 hover:bg-zinc-800/50 hover:text-rose-400 transition-all"
         >
           <LogOut className="w-5 h-5 shrink-0" />
-          <span
-            className={cn(
-              'text-[11px] font-bold uppercase tracking-widest whitespace-nowrap',
-              'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
-            )}
-          >
-            Sign out
-          </span>
+          <span className={labelClass}>Sign out</span>
         </button>
       </div>
     </div>

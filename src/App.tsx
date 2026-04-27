@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw, ArrowUpDown, CreditCard } from 'lucide-react';
+import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
@@ -19,11 +19,12 @@ import OverviewTab from './components/tabs/OverviewTab';
 import TransactionsTab from './components/tabs/TransactionsTab';
 import PerformanceTab from './components/tabs/PerformanceTab';
 import InsightsTab from './components/tabs/InsightsTab';
+import ResearchTab from './components/tabs/ResearchTab';
 
 import { StockData, Transaction, TransactionType, PriceHistory } from './types';
 import { cn } from './lib/utils';
 
-type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive';
+type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
 
 export default function App() {
   const { user, isReady, login, logout } = useAuth();
@@ -159,13 +160,13 @@ export default function App() {
           )}
 
           {/* Persistent KPI header */}
-          <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0">
+          <div className="bg-zinc-900 border-b border-zinc-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
-              <div className="text-6xl font-light tracking-tighter text-white mb-4">
+              <div className="text-3xl sm:text-6xl font-light tracking-tighter text-white mb-3 sm:mb-4">
                 ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="flex items-center gap-8">
+              <div className="flex items-center gap-4 sm:gap-8 flex-wrap">
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Cash</div>
                   <div className="text-base font-black text-blue-400">
@@ -208,7 +209,7 @@ export default function App() {
           </div>
 
           {/* Scrollable tab content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className={cn('flex-1 min-h-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -216,7 +217,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="p-6"
+                className={activeTab === 'research' ? 'h-full' : 'p-6'}
               >
                 {activeTab === 'overview' && (
                   <OverviewTab
@@ -250,10 +251,36 @@ export default function App() {
                   />
                 )}
                 {activeTab === 'deep-dive' && (
-                  // @ts-ignore — InsightsTab Props will be updated in a follow-up task
-                  <InsightsTab
-                    {...{ uid: user.uid, holdings, stockPrices, cashBalance } as any}
-                  />
+                  <div className="flex flex-col items-center justify-center h-full gap-8 text-center px-8 select-none">
+                    <div className="relative">
+                      <div className="w-20 h-20 rounded-3xl bg-zinc-800/80 border border-zinc-700/50 flex items-center justify-center">
+                        <BrainCircuit className="w-9 h-9 text-zinc-600" />
+                      </div>
+                      <div className="absolute -top-1.5 -right-1.5 text-[8px] font-black uppercase tracking-widest text-zinc-400 bg-zinc-800 border border-zinc-700 px-1.5 py-0.5 rounded-full">
+                        Soon
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 max-w-sm">
+                      <h2 className="text-2xl font-black text-zinc-300 tracking-tight">
+                        Deep Dive is on its way.
+                      </h2>
+                      <p className="text-sm text-zinc-500 leading-relaxed">
+                        DCF models, earnings call summaries, scenario analysis, and AI-powered stock breakdowns.
+                        The toolkit serious investors actually need — being built right now.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2 items-center">
+                      {['Discounted Cash Flow models', 'Earnings call AI summaries', 'Bear / base / bull scenario builder', 'Comparable company analysis'].map((feature) => (
+                        <div key={feature} className="flex items-center gap-2 text-xs text-zinc-600">
+                          <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {activeTab === 'research' && (
+                  <ResearchTab holdings={holdings} />
                 )}
               </motion.div>
             </AnimatePresence>

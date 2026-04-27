@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
 import { cn } from '../../lib/utils';
+import TickerLogo from '../shared/TickerLogo';
 
 interface Props {
   transactions: Transaction[];
@@ -30,32 +31,6 @@ const TYPE_BADGE: Record<TransactionType, { label: string; border: string; text:
   withdrawal: { label: 'W/D',  border: 'border-amber-500',   text: 'text-amber-400' },
 };
 
-const LOGO_SOURCES = (ticker: string) => [
-  `https://financialmodelingprep.com/image-stock/${ticker}.png`,
-  `https://assets.parqet.com/logos/symbol/${ticker}`,
-];
-
-function TickerLogo({ ticker }: { ticker: string }) {
-  const [srcIndex, setSrcIndex] = useState(0);
-  const sources = LOGO_SOURCES(ticker);
-  const onError = useCallback(() => setSrcIndex((i) => i + 1), []);
-  if (srcIndex >= sources.length) {
-    return (
-      <div className="w-7 h-7 rounded-md bg-zinc-700 flex items-center justify-center text-[9px] font-black text-zinc-300 shrink-0">
-        {ticker.slice(0, 2)}
-      </div>
-    );
-  }
-  return (
-    <img
-      key={srcIndex}
-      src={sources[srcIndex]}
-      alt={ticker}
-      onError={onError}
-      className="w-7 h-7 rounded-md object-contain bg-zinc-800 shrink-0"
-    />
-  );
-}
 
 export default function TransactionsTab({
   transactions, onEdit, onDelete, onAddTrade, onAddCash, onImport, onExport, onClearAll,
@@ -140,7 +115,8 @@ export default function TransactionsTab({
       </div>
 
       {filtered.length > 0 ? (
-        <div>
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: '640px' }}>
           {/* Column headers */}
           <div className="grid grid-cols-[130px_80px_1fr_100px_120px_140px_64px] px-6 py-3 border-b border-zinc-800">
             {['Date', 'Type', 'Asset', 'Shares', 'Price', 'Total', ''].map((h, i) => (
@@ -217,6 +193,7 @@ export default function TransactionsTab({
               </div>
             );
           })}
+          </div>
         </div>
       ) : (
         <div className="text-center py-16 text-zinc-500 italic text-sm">

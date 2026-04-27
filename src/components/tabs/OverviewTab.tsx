@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
+import TickerLogo from '../shared/TickerLogo';
 import {
   ResponsiveContainer, Treemap, Tooltip, PieChart, Pie, Cell, Sector, LineChart, Line,
 } from 'recharts';
@@ -345,15 +346,15 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
             {filteredSectors.length > 0 ? (
               <div className="flex flex-col md:flex-row items-center gap-10">
                 {/* Donut chart */}
-                <div className="relative shrink-0" style={{ width: 300, height: 300 }}>
+                <div className="relative w-full max-w-[300px] shrink-0" style={{ height: 300 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={filteredSectors}
                         cx="50%"
                         cy="50%"
-                        innerRadius={98}
-                        outerRadius={140}
+                        innerRadius="63%"
+                        outerRadius="90%"
                         paddingAngle={3}
                         dataKey="value"
                         stroke="none"
@@ -504,7 +505,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                   <tr key={h.ticker} className="hover:bg-zinc-800/40 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        <TickerLogo ticker={h.ticker} />
+                        <TickerLogo ticker={h.ticker} size="circle" />
                         <div className="font-black text-base tracking-tighter text-white">{h.ticker}</div>
                       </div>
                     </td>
@@ -580,30 +581,3 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
   );
 }
 
-const LOGO_SOURCES = (ticker: string) => [
-  `https://financialmodelingprep.com/image-stock/${ticker}.png`,
-  `https://assets.parqet.com/logos/symbol/${ticker}`,
-];
-
-function TickerLogo({ ticker }: { ticker: string }) {
-  const [srcIndex, setSrcIndex] = useState(0);
-  const sources = LOGO_SOURCES(ticker);
-  const onError = useCallback(() => setSrcIndex((i) => i + 1), []);
-
-  if (srcIndex >= sources.length) {
-    return (
-      <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-black text-zinc-300 shrink-0">
-        {ticker.slice(0, 2)}
-      </div>
-    );
-  }
-  return (
-    <img
-      key={srcIndex}
-      src={sources[srcIndex]}
-      alt={ticker}
-      onError={onError}
-      className="w-8 h-8 rounded-full object-contain bg-zinc-800 shrink-0"
-    />
-  );
-}

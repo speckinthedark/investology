@@ -23,11 +23,176 @@ const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   : null;
 
+const EXCHANGE_MAP: Record<string, string> = {
+  NMS: 'NASDAQ', NasdaqGS: 'NASDAQ', NasdaqGM: 'NASDAQ', NCM: 'NASDAQ',
+  NYQ: 'NYSE', NYSE: 'NYSE',
+  PCX: 'AMEX', ASE: 'AMEX',
+};
+
+function buildFTSPeriods(
+  data: any[],
+  field: string,
+  mode: 'annual' | 'quarterly',
+): { label: string; value: number }[] {
+  return [...data]
+    .filter((e: any) => e[field] != null)
+    .sort((a: any, b: any) => {
+      const toMs = (d: any) => d instanceof Date ? d.getTime() : (d as number) * 1000;
+      return toMs(a.date) - toMs(b.date);
+    })
+    .map((entry: any) => {
+      const ts = entry.date instanceof Date ? entry.date.getTime() : (entry.date as number) * 1000;
+      const date = new Date(ts);
+      const year = date.getFullYear();
+      const quarter = Math.ceil((date.getMonth() + 1) / 3);
+      const label = mode === 'annual' ? `FY${year}` : `Q${quarter} ${year}`;
+      return { label, value: entry[field] as number };
+    });
+}
+
+function buildNetCashPeriods(
+  data: any[],
+  mode: 'annual' | 'quarterly',
+): { label: string; value: number }[] {
+  return [...data]
+    .filter((e: any) => e.cashAndCashEquivalents != null)
+    .sort((a: any, b: any) => {
+      const toMs = (d: any) => d instanceof Date ? d.getTime() : (d as number) * 1000;
+      return toMs(a.date) - toMs(b.date);
+    })
+    .map((entry: any) => {
+      const ts = entry.date instanceof Date ? entry.date.getTime() : (entry.date as number) * 1000;
+      const date = new Date(ts);
+      const year = date.getFullYear();
+      const quarter = Math.ceil((date.getMonth() + 1) / 3);
+      const label = mode === 'annual' ? `FY${year}` : `Q${quarter} ${year}`;
+      const cash = entry.cashAndCashEquivalents as number;
+      const debt = typeof entry.totalDebt === 'number' ? entry.totalDebt : 0;
+      return { label, value: cash - debt };
+    });
+}
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
+
+  // --- Rich stock detail for Research tab ---
+  app.get('/api/stock/detail/:ticker', async (req, res) => {
+    const ticker = (req.params.ticker as string).toUpperCase();
+    try {
+      const fifteenYearsAgo = new Date(Date.now() - 15 * 365 * 86400 * 1000).toISOString().split('T')[0];
+      const fourYearsAgo    = new Date(Date.now() -  4 * 365 * 86400 * 1000).toISOString().split('T')[0];
+
+      const [quote, summary, annualFTS, quarterlyFTS] = await Promise.all([
+        yahooFinance.quote(ticker),
+        yahooFinance.quoteSummary(ticker, {
+          modules: ['assetProfile', 'summaryDetail', 'defaultKeyStatistics', 'financialData'] as any,
+        }).catch(() => null),
+        (yahooFinance as any).fundamentalsTimeSeries(ticker, {
+          period1: fifteenYearsAgo, type: 'annual', module: 'all',
+        }).catch(() => []),
+        (yahooFinance as any).fundamentalsTimeSeries(ticker, {
+          period1: fourYearsAgo, type: 'quarterly', module: 'all',
+        }).catch(() => []),
+      ]);
+
+      const price = (quote as any).regularMarketPrice ?? null;
+      if (price == null) return res.status(400).json({ error: `Ticker not found: ${ticker}` });
+
+      const profile  = (summary as any)?.assetProfile ?? {};
+      const detail   = (summary as any)?.summaryDetail ?? {};
+      const keyStats = (summary as any)?.defaultKeyStatistics ?? {};
+      const finData  = (summary as any)?.financialData ?? {};
+
+      const rawExchange = (quote as any).exchange ?? '';
+      const exchange = EXCHANGE_MAP[rawExchange] ?? (quote as any).fullExchangeName ?? rawExchange;
+      const tvSymbol = exchange ? `${exchange}:${ticker}` : ticker;
+
+      res.json({
+        ticker,
+        companyName: (quote as any).longName ?? (quote as any).shortName ?? ticker,
+        exchange,
+        tvSymbol,
+        sector:              profile.sector ?? '',
+        industry:            profile.industry ?? '',
+        country:             profile.country ?? '',
+        website:             profile.website ?? '',
+        fullTimeEmployees:   profile.fullTimeEmployees ?? 0,
+        longBusinessSummary: profile.longBusinessSummary ?? '',
+
+        price,
+        change:        (quote as any).regularMarketChange ?? 0,
+        changePercent: (quote as any).regularMarketChangePercent ?? 0,
+
+        marketCap:        (quote as any).marketCap ?? detail.marketCap ?? null,
+        volume:           (quote as any).regularMarketVolume ?? null,
+        averageVolume:    detail.averageVolume ?? null,
+        dayLow:           detail.dayLow ?? null,
+        dayHigh:          detail.dayHigh ?? null,
+        fiftyTwoWeekHigh: detail.fiftyTwoWeekHigh ?? null,
+        fiftyTwoWeekLow:  detail.fiftyTwoWeekLow ?? null,
+        fiftyDayAverage:  detail.fiftyDayAverage ?? null,
+        twoHundredDayAverage: detail.twoHundredDayAverage ?? null,
+        beta:             detail.beta ?? keyStats.beta ?? null,
+        sharesOutstanding:   keyStats.sharesOutstanding ?? null,
+        floatShares:         keyStats.floatShares ?? null,
+        shortRatio:          keyStats.shortRatio ?? null,
+        shortPercentOfFloat: keyStats.shortPercentOfFloat ?? null,
+
+        trailingPE:    detail.trailingPE ?? null,
+        forwardPE:     detail.forwardPE ?? null,
+        trailingEps:   keyStats.trailingEps ?? null,
+        pegRatio:      keyStats.pegRatio ?? null,
+        priceToSalesTrailing12Months: detail.priceToSalesTrailing12Months ?? null,
+        priceToBook:   keyStats.priceToBook ?? null,
+        dividendYield: detail.dividendYield ?? null,
+        totalRevenue:  finData.totalRevenue ?? null,
+        revenueGrowth: finData.revenueGrowth ?? null,
+        ebitda:        finData.ebitda ?? null,
+        profitMargins:    finData.profitMargins ?? null,
+        operatingMargins: finData.operatingMargins ?? null,
+        returnOnEquity:   finData.returnOnEquity ?? null,
+        returnOnAssets:   finData.returnOnAssets ?? null,
+        freeCashflow:     finData.freeCashflow ?? null,
+        totalDebt:        finData.totalDebt ?? null,
+        debtToEquity:     finData.debtToEquity ?? null,
+        currentRatio:     finData.currentRatio ?? null,
+        quickRatio:       finData.quickRatio ?? null,
+
+        // Annual — Income
+        annualRevenue:            buildFTSPeriods(annualFTS, 'totalRevenue', 'annual'),
+        annualGrossProfit:        buildFTSPeriods(annualFTS, 'grossProfit',  'annual'),
+        annualNetIncome:          buildFTSPeriods(annualFTS, 'netIncome',    'annual'),
+        // Annual — Balance Sheet
+        annualTotalAssets:        buildFTSPeriods(annualFTS, 'totalAssets',                         'annual'),
+        annualTotalLiabilities:   buildFTSPeriods(annualFTS, 'totalLiabilitiesNetMinorityInterest', 'annual'),
+        annualNetCash:            buildNetCashPeriods(annualFTS, 'annual'),
+        // Annual — Cash Flow
+        annualOperatingCashFlow:  buildFTSPeriods(annualFTS, 'operatingCashFlow',  'annual'),
+        annualInvestingCashFlow:  buildFTSPeriods(annualFTS, 'investingCashFlow',  'annual'),
+        annualFinancingCashFlow:  buildFTSPeriods(annualFTS, 'financingCashFlow',  'annual'),
+        annualFreeCashFlow:       buildFTSPeriods(annualFTS, 'freeCashFlow',       'annual'),
+        // Quarterly — Income
+        quarterlyRevenue:           buildFTSPeriods(quarterlyFTS, 'totalRevenue', 'quarterly'),
+        quarterlyGrossProfit:       buildFTSPeriods(quarterlyFTS, 'grossProfit',  'quarterly'),
+        quarterlyNetIncome:         buildFTSPeriods(quarterlyFTS, 'netIncome',    'quarterly'),
+        // Quarterly — Balance Sheet
+        quarterlyTotalAssets:       buildFTSPeriods(quarterlyFTS, 'totalAssets',                         'quarterly'),
+        quarterlyTotalLiabilities:  buildFTSPeriods(quarterlyFTS, 'totalLiabilitiesNetMinorityInterest', 'quarterly'),
+        quarterlyNetCash:           buildNetCashPeriods(quarterlyFTS, 'quarterly'),
+        // Quarterly — Cash Flow
+        quarterlyOperatingCashFlow: buildFTSPeriods(quarterlyFTS, 'operatingCashFlow',  'quarterly'),
+        quarterlyInvestingCashFlow: buildFTSPeriods(quarterlyFTS, 'investingCashFlow',  'quarterly'),
+        quarterlyFinancingCashFlow: buildFTSPeriods(quarterlyFTS, 'financingCashFlow',  'quarterly'),
+        quarterlyFreeCashFlow:      buildFTSPeriods(quarterlyFTS, 'freeCashFlow',       'quarterly'),
+      });
+    } catch (e) {
+      console.error('Stock detail error:', e);
+      res.status(500).json({ error: 'Failed to fetch stock data' });
+    }
+  });
 
   // --- Stock quote + 7-day sparkline ---
   app.get('/api/stock/:ticker', async (req, res) => {
