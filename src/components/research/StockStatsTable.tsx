@@ -5,6 +5,11 @@ interface Props {
   detail: StockDetail;
 }
 
+function fmtPrice(n: number | null): string {
+  if (n === null || n === undefined) return '—';
+  return `$${n.toFixed(2)}`;
+}
+
 function fmtLarge(n: number | null): string {
   if (n === null || n === undefined) return '—';
   const abs = Math.abs(n);
@@ -28,9 +33,9 @@ function fmtPct(n: number | null): string {
   return `${(n * 100).toFixed(2)}%`;
 }
 
-function fmtRatio(n: number | null): string {
+function fmtRatio(n: number | null, decimals = 2): string {
   if (n === null || n === undefined) return '—';
-  return `${n.toFixed(1)}x`;
+  return `${n.toFixed(decimals)}x`;
 }
 
 function Row({ label, value, color }: { label: string; value: string; color?: 'green' | 'red' | 'muted' }) {
@@ -61,30 +66,53 @@ function SectionHeader({ label }: { label: string }) {
 export default function StockStatsTable({ detail }: Props) {
   const pctPositive = (n: number | null) => n !== null && n > 0 ? 'green' : n !== null && n < 0 ? 'red' : undefined;
 
+  const dayRange = (detail.dayLow !== null && detail.dayHigh !== null)
+    ? `$${detail.dayLow.toFixed(2)} – $${detail.dayHigh.toFixed(2)}`
+    : '—';
+
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
       <SectionHeader label="Trading Snapshot" />
-      <Row label="Market Cap"  value={fmtLarge(detail.marketCap)} />
-      <Row label="Volume"      value={fmtNum(detail.volume)} />
-      <Row label="Avg. Volume" value={fmtNum(detail.averageVolume)} color="muted" />
-      <Row label="52W High"    value={detail.fiftyTwoWeekHigh !== null ? `$${detail.fiftyTwoWeekHigh.toFixed(2)}` : '—'} color={detail.fiftyTwoWeekHigh !== null ? 'green' : undefined} />
-      <Row label="52W Low"     value={detail.fiftyTwoWeekLow  !== null ? `$${detail.fiftyTwoWeekLow.toFixed(2)}`  : '—'} color={detail.fiftyTwoWeekLow  !== null ? 'red'   : undefined} />
-      <Row label="Beta"        value={detail.beta !== null ? detail.beta.toFixed(2) : '—'} />
+      <Row label="Market Cap"        value={fmtLarge(detail.marketCap)} />
+      <Row label="Volume"            value={fmtNum(detail.volume)} />
+      <Row label="Avg. Volume"       value={fmtNum(detail.averageVolume)} color="muted" />
+      <Row label="Day's Range"       value={dayRange} color="muted" />
+      <Row label="52W High"          value={fmtPrice(detail.fiftyTwoWeekHigh)} color={detail.fiftyTwoWeekHigh !== null ? 'green' : undefined} />
+      <Row label="52W Low"           value={fmtPrice(detail.fiftyTwoWeekLow)}  color={detail.fiftyTwoWeekLow  !== null ? 'red'   : undefined} />
+      <Row label="50-Day Avg"        value={fmtPrice(detail.fiftyDayAverage)} />
+      <Row label="200-Day Avg"       value={fmtPrice(detail.twoHundredDayAverage)} color="muted" />
+      <Row label="Beta"              value={detail.beta !== null ? detail.beta.toFixed(2) : '—'} />
+      <Row label="Shares Out."       value={fmtNum(detail.sharesOutstanding)} color="muted" />
+      <Row label="Float"             value={fmtNum(detail.floatShares)} color="muted" />
+      <Row label="Short Ratio"       value={detail.shortRatio !== null ? detail.shortRatio.toFixed(2) : '—'} />
+      <Row label="Short % Float"     value={fmtPct(detail.shortPercentOfFloat)} />
 
       <SectionHeader label="Fundamentals" />
-      <Row label="P/E (TTM)"     value={fmtRatio(detail.trailingPE)} />
-      <Row label="Forward P/E"   value={fmtRatio(detail.forwardPE)} />
-      <Row label="EPS (TTM)"     value={detail.trailingEps !== null ? `$${detail.trailingEps.toFixed(2)}` : '—'} />
-      <Row label="Profit Margin" value={fmtPct(detail.profitMargins)} color={pctPositive(detail.profitMargins)} />
-      <Row label="Div. Yield"    value={detail.dividendYield !== null ? fmtPct(detail.dividendYield) : '—'} color="muted" />
+      <Row label="P/E (TTM)"         value={fmtRatio(detail.trailingPE)} />
+      <Row label="Forward P/E"       value={fmtRatio(detail.forwardPE)} />
+      <Row label="PEG Ratio (5yr)"   value={fmtRatio(detail.pegRatio)} />
+      <Row label="P/S (TTM)"         value={fmtRatio(detail.priceToSalesTrailing12Months)} />
+      <Row label="P/B"               value={fmtRatio(detail.priceToBook)} />
+      <Row label="EPS (TTM)"         value={detail.trailingEps !== null ? `$${detail.trailingEps.toFixed(2)}` : '—'} />
+      <Row label="Revenue (TTM)"     value={fmtLarge(detail.totalRevenue)} />
+      <Row label="Rev. Growth (YoY)" value={fmtPct(detail.revenueGrowth)} color={pctPositive(detail.revenueGrowth)} />
+      <Row label="EBITDA"            value={fmtLarge(detail.ebitda)} />
+      <Row label="Profit Margin"     value={fmtPct(detail.profitMargins)} color={pctPositive(detail.profitMargins)} />
+      <Row label="Div. Yield"        value={detail.dividendYield !== null ? fmtPct(detail.dividendYield) : '—'} color="muted" />
 
       <SectionHeader label="Company" />
-      <Row label="Industry"   value={detail.industry || '—'} />
-      <Row label="Employees"  value={detail.fullTimeEmployees ? detail.fullTimeEmployees.toLocaleString() : '—'} />
-      <Row label="ROE"        value={fmtPct(detail.returnOnEquity)} color={pctPositive(detail.returnOnEquity)} />
-      <Row label="Free Cash Flow"  value={fmtLarge(detail.freeCashflow)} color={pctPositive(detail.freeCashflow)} />
-      <Row label="Op. Margin" value={fmtPct(detail.operatingMargins)} color={pctPositive(detail.operatingMargins)} />
-      <Row label="Website"    value={detail.website ? detail.website.replace(/^https?:\/\//, '') : '—'} color="muted" />
+      <Row label="Sector"            value={detail.sector || '—'} />
+      <Row label="Industry"          value={detail.industry || '—'} />
+      <Row label="Employees"         value={detail.fullTimeEmployees ? detail.fullTimeEmployees.toLocaleString() : '—'} />
+      <Row label="ROE"               value={fmtPct(detail.returnOnEquity)} color={pctPositive(detail.returnOnEquity)} />
+      <Row label="ROA"               value={fmtPct(detail.returnOnAssets)} color={pctPositive(detail.returnOnAssets)} />
+      <Row label="Op. Margin"        value={fmtPct(detail.operatingMargins)} color={pctPositive(detail.operatingMargins)} />
+      <Row label="Free Cash Flow"    value={fmtLarge(detail.freeCashflow)} color={pctPositive(detail.freeCashflow)} />
+      <Row label="Total Debt"        value={fmtLarge(detail.totalDebt)} />
+      <Row label="Debt / Equity"     value={detail.debtToEquity !== null ? fmtRatio(detail.debtToEquity / 100) : '—'} />
+      <Row label="Current Ratio"     value={detail.currentRatio !== null ? detail.currentRatio.toFixed(2) : '—'} />
+      <Row label="Quick Ratio"       value={detail.quickRatio !== null ? detail.quickRatio.toFixed(2) : '—'} />
+      <Row label="Website"           value={detail.website ? detail.website.replace(/^https?:\/\//, '') : '—'} color="muted" />
     </div>
   );
 }

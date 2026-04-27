@@ -79,19 +79,38 @@ export interface StockDetail {
   marketCap: number | null;
   volume: number | null;
   averageVolume: number | null;
+  dayLow: number | null;
+  dayHigh: number | null;
   fiftyTwoWeekHigh: number | null;
   fiftyTwoWeekLow: number | null;
+  fiftyDayAverage: number | null;
+  twoHundredDayAverage: number | null;
   beta: number | null;
+  sharesOutstanding: number | null;
+  floatShares: number | null;
+  shortRatio: number | null;
+  shortPercentOfFloat: number | null;
 
   // Fundamentals
   trailingPE: number | null;
   forwardPE: number | null;
   trailingEps: number | null;
+  pegRatio: number | null;
+  priceToSalesTrailing12Months: number | null;
+  priceToBook: number | null;
   dividendYield: number | null;
+  totalRevenue: number | null;
+  revenueGrowth: number | null;
+  ebitda: number | null;
   profitMargins: number | null;
   operatingMargins: number | null;
   returnOnEquity: number | null;
+  returnOnAssets: number | null;
   freeCashflow: number | null;
+  totalDebt: number | null;
+  debtToEquity: number | null;
+  currentRatio: number | null;
+  quickRatio: number | null;
 
   // Financial history (for bar chart)
   annualRevenue: FinancialPeriod[];
