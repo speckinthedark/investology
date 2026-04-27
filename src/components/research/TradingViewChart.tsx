@@ -52,6 +52,7 @@ export default function TradingViewChart({ tvSymbol }: Props) {
         autosize: true,
         symbol: tvSymbol,
         range: RANGE_MAP[timeframe],
+        interval: 'D',
         theme: 'dark',
         style: '1',
         locale: 'en',
@@ -69,10 +70,10 @@ export default function TradingViewChart({ tvSymbol }: Props) {
   }, [tvSymbol, timeframe]);
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Price Chart</span>
-        <div className="flex items-center bg-zinc-800 rounded-lg p-0.5">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 gap-2 flex-wrap">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 shrink-0">Price Chart</span>
+        <div className="flex items-center bg-zinc-800 rounded-lg p-0.5 overflow-x-auto">
           {TIMEFRAMES.map((tf) => (
             <button
               key={tf}
@@ -87,7 +88,7 @@ export default function TradingViewChart({ tvSymbol }: Props) {
           ))}
         </div>
       </div>
-      <div id={TV_CONTAINER_ID} ref={containerRef} style={{ height: '400px' }} />
+      <div id={TV_CONTAINER_ID} ref={containerRef} className="flex-1 min-h-0" />
     </div>
   );
 }

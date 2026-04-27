@@ -115,7 +115,8 @@ export default function TransactionsTab({
       </div>
 
       {filtered.length > 0 ? (
-        <div>
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: '640px' }}>
           {/* Column headers */}
           <div className="grid grid-cols-[130px_80px_1fr_100px_120px_140px_64px] px-6 py-3 border-b border-zinc-800">
             {['Date', 'Type', 'Asset', 'Shares', 'Price', 'Total', ''].map((h, i) => (
@@ -192,6 +193,7 @@ export default function TransactionsTab({
               </div>
             );
           })}
+          </div>
         </div>
       ) : (
         <div className="text-center py-16 text-zinc-500 italic text-sm">

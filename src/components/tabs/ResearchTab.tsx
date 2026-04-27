@@ -38,11 +38,13 @@ export default function ResearchTab({ holdings }: Props) {
     : undefined;
 
   return (
-    <div className="flex flex-col gap-4">
-      <StockSearchBar onSearch={handleSearch} isLoading={status === 'loading'} />
+    <div className="h-full flex flex-col p-6 gap-4 min-h-0">
+      <div className="shrink-0">
+        <StockSearchBar onSearch={handleSearch} isLoading={status === 'loading'} />
+      </div>
 
       {status === 'idle' && (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-zinc-600">
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-zinc-600">
           <Search className="w-8 h-8 opacity-30" />
           <p className="text-sm font-medium">Search any ticker to get started</p>
           <p className="text-xs opacity-60">Try AAPL, MSFT, NVDA, TSLA…</p>
@@ -58,28 +60,41 @@ export default function ResearchTab({ holdings }: Props) {
       {status === 'loading' && (
         <div className="flex flex-col gap-4 animate-pulse">
           <div className="h-20 bg-zinc-800/60 rounded-xl" />
-          <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 3fr' }}>
-            <div className="h-[700px] bg-zinc-800/60 rounded-xl" />
-            <div className="flex flex-col gap-4">
-              <div className="h-[432px] bg-zinc-800/60 rounded-xl" />
-              <div className="h-64 bg-zinc-800/60 rounded-xl" />
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_3fr]">
+            <div className="h-[400px] bg-zinc-800/60 rounded-xl" />
+            <div className="flex flex-col gap-4 h-[400px]">
+              <div className="flex-1 bg-zinc-800/60 rounded-xl" />
+              <div className="flex-1 bg-zinc-800/60 rounded-xl" />
             </div>
           </div>
         </div>
       )}
 
       {status === 'success' && detail && (
-        <>
-          <StockHero detail={detail} />
-          <PortfolioCallout holding={holding} currentPrice={detail.price} />
-          <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 3fr' }}>
-            <StockStatsTable detail={detail} />
-            <div className="flex flex-col gap-4">
-              <TradingViewChart tvSymbol={detail.tvSymbol} />
-              <FinancialsChart detail={detail} />
+        <div className="flex-1 min-h-0 flex flex-col gap-4">
+          <div className="shrink-0">
+            <StockHero detail={detail} />
+          </div>
+          {holding && (
+            <div className="shrink-0">
+              <PortfolioCallout holding={holding} currentPrice={detail.price} />
+            </div>
+          )}
+          {/* Grid fills remaining height; on mobile it scrolls, on desktop it's clamped */}
+          <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_3fr] lg:h-full">
+              {/* Left: stats table — scrolls internally on desktop */}
+              <div className="lg:overflow-y-auto custom-scrollbar">
+                <StockStatsTable detail={detail} />
+              </div>
+              {/* Right: charts — min-h on mobile so they aren't collapsed */}
+              <div className="flex flex-col gap-4 min-h-[600px] lg:min-h-0">
+                <TradingViewChart tvSymbol={detail.tvSymbol} />
+                <FinancialsChart detail={detail} />
+              </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

@@ -321,7 +321,7 @@ export default function PerformanceTab({
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-5">
             $10,000 Invested · {periodLabel}
           </div>
-          <div className="grid grid-cols-3 divide-x divide-zinc-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-800">
             <TenKColumn
               label="My Portfolio"
               color="text-violet-400"
@@ -567,7 +567,7 @@ function TenKColumn({ label, color, value, loading }: {
 }) {
   const pct = value != null ? ((value - 10_000) / 10_000) * 100 : null;
   return (
-    <div className="flex flex-col gap-2 px-5 first:pl-0 last:pr-0">
+    <div className="flex flex-col gap-2 py-3 sm:py-0 sm:px-5 sm:first:pl-0 sm:last:pr-0">
       <div className={cn('text-[10px] font-bold uppercase tracking-widest', color)}>{label}</div>
       {loading ? (
         <div className="h-8 w-20 bg-zinc-800 rounded-lg animate-pulse" />

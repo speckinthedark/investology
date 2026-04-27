@@ -113,10 +113,30 @@ export interface StockDetail {
   quickRatio: number | null;
 
   // Financial history (for bar chart)
+  // Annual — Income Statement
   annualRevenue: FinancialPeriod[];
+  annualGrossProfit: FinancialPeriod[];
   annualNetIncome: FinancialPeriod[];
+  // Annual — Balance Sheet
+  annualTotalAssets: FinancialPeriod[];
+  annualTotalLiabilities: FinancialPeriod[];
+  annualNetCash: FinancialPeriod[];
+  // Annual — Cash Flow
+  annualOperatingCashFlow: FinancialPeriod[];
+  annualInvestingCashFlow: FinancialPeriod[];
+  annualFinancingCashFlow: FinancialPeriod[];
   annualFreeCashFlow: FinancialPeriod[];
+  // Quarterly — Income Statement
   quarterlyRevenue: FinancialPeriod[];
+  quarterlyGrossProfit: FinancialPeriod[];
   quarterlyNetIncome: FinancialPeriod[];
+  // Quarterly — Balance Sheet
+  quarterlyTotalAssets: FinancialPeriod[];
+  quarterlyTotalLiabilities: FinancialPeriod[];
+  quarterlyNetCash: FinancialPeriod[];
+  // Quarterly — Cash Flow
+  quarterlyOperatingCashFlow: FinancialPeriod[];
+  quarterlyInvestingCashFlow: FinancialPeriod[];
+  quarterlyFinancingCashFlow: FinancialPeriod[];
   quarterlyFreeCashFlow: FinancialPeriod[];
 }

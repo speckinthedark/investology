@@ -10,11 +10,11 @@ export default function StockHero({ detail }: Props) {
   const positive = detail.change >= 0;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         <TickerLogo ticker={detail.ticker} size="md" />
-        <div>
-          <div className="text-base font-bold text-white">{detail.companyName}</div>
+        <div className="min-w-0">
+          <div className="text-base font-bold text-white truncate">{detail.companyName}</div>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             {detail.exchange && (
               <span className="bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest">

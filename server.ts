@@ -32,7 +32,6 @@ const EXCHANGE_MAP: Record<string, string> = {
 function buildFTSPeriods(
   data: any[],
   field: string,
-  count: number,
   mode: 'annual' | 'quarterly',
 ): { label: string; value: number }[] {
   return [...data]
@@ -41,7 +40,6 @@ function buildFTSPeriods(
       const toMs = (d: any) => d instanceof Date ? d.getTime() : (d as number) * 1000;
       return toMs(a.date) - toMs(b.date);
     })
-    .slice(-count)
     .map((entry: any) => {
       const ts = entry.date instanceof Date ? entry.date.getTime() : (entry.date as number) * 1000;
       const date = new Date(ts);
@@ -49,6 +47,28 @@ function buildFTSPeriods(
       const quarter = Math.ceil((date.getMonth() + 1) / 3);
       const label = mode === 'annual' ? `FY${year}` : `Q${quarter} ${year}`;
       return { label, value: entry[field] as number };
+    });
+}
+
+function buildNetCashPeriods(
+  data: any[],
+  mode: 'annual' | 'quarterly',
+): { label: string; value: number }[] {
+  return [...data]
+    .filter((e: any) => e.cashAndCashEquivalents != null)
+    .sort((a: any, b: any) => {
+      const toMs = (d: any) => d instanceof Date ? d.getTime() : (d as number) * 1000;
+      return toMs(a.date) - toMs(b.date);
+    })
+    .map((entry: any) => {
+      const ts = entry.date instanceof Date ? entry.date.getTime() : (entry.date as number) * 1000;
+      const date = new Date(ts);
+      const year = date.getFullYear();
+      const quarter = Math.ceil((date.getMonth() + 1) / 3);
+      const label = mode === 'annual' ? `FY${year}` : `Q${quarter} ${year}`;
+      const cash = entry.cashAndCashEquivalents as number;
+      const debt = typeof entry.totalDebt === 'number' ? entry.totalDebt : 0;
+      return { label, value: cash - debt };
     });
 }
 
@@ -62,8 +82,8 @@ async function startServer() {
   app.get('/api/stock/detail/:ticker', async (req, res) => {
     const ticker = (req.params.ticker as string).toUpperCase();
     try {
-      const sixYearsAgo = new Date(Date.now() - 6 * 365 * 86400 * 1000).toISOString().split('T')[0];
-      const threeYearsAgo = new Date(Date.now() - 3 * 365 * 86400 * 1000).toISOString().split('T')[0];
+      const fifteenYearsAgo = new Date(Date.now() - 15 * 365 * 86400 * 1000).toISOString().split('T')[0];
+      const fourYearsAgo    = new Date(Date.now() -  4 * 365 * 86400 * 1000).toISOString().split('T')[0];
 
       const [quote, summary, annualFTS, quarterlyFTS] = await Promise.all([
         yahooFinance.quote(ticker),
@@ -71,10 +91,10 @@ async function startServer() {
           modules: ['assetProfile', 'summaryDetail', 'defaultKeyStatistics', 'financialData'] as any,
         }).catch(() => null),
         (yahooFinance as any).fundamentalsTimeSeries(ticker, {
-          period1: sixYearsAgo, type: 'annual', module: 'all',
+          period1: fifteenYearsAgo, type: 'annual', module: 'all',
         }).catch(() => []),
         (yahooFinance as any).fundamentalsTimeSeries(ticker, {
-          period1: threeYearsAgo, type: 'quarterly', module: 'all',
+          period1: fourYearsAgo, type: 'quarterly', module: 'all',
         }).catch(() => []),
       ]);
 
@@ -141,12 +161,32 @@ async function startServer() {
         currentRatio:     finData.currentRatio ?? null,
         quickRatio:       finData.quickRatio ?? null,
 
-        annualRevenue:          buildFTSPeriods(annualFTS,    'totalRevenue', 4, 'annual'),
-        annualNetIncome:        buildFTSPeriods(annualFTS,    'netIncome',    4, 'annual'),
-        annualFreeCashFlow:     buildFTSPeriods(annualFTS,    'freeCashFlow', 4, 'annual'),
-        quarterlyRevenue:       buildFTSPeriods(quarterlyFTS, 'totalRevenue', 8, 'quarterly'),
-        quarterlyNetIncome:     buildFTSPeriods(quarterlyFTS, 'netIncome',    8, 'quarterly'),
-        quarterlyFreeCashFlow:  buildFTSPeriods(quarterlyFTS, 'freeCashFlow', 8, 'quarterly'),
+        // Annual — Income
+        annualRevenue:            buildFTSPeriods(annualFTS, 'totalRevenue', 'annual'),
+        annualGrossProfit:        buildFTSPeriods(annualFTS, 'grossProfit',  'annual'),
+        annualNetIncome:          buildFTSPeriods(annualFTS, 'netIncome',    'annual'),
+        // Annual — Balance Sheet
+        annualTotalAssets:        buildFTSPeriods(annualFTS, 'totalAssets',                         'annual'),
+        annualTotalLiabilities:   buildFTSPeriods(annualFTS, 'totalLiabilitiesNetMinorityInterest', 'annual'),
+        annualNetCash:            buildNetCashPeriods(annualFTS, 'annual'),
+        // Annual — Cash Flow
+        annualOperatingCashFlow:  buildFTSPeriods(annualFTS, 'operatingCashFlow',  'annual'),
+        annualInvestingCashFlow:  buildFTSPeriods(annualFTS, 'investingCashFlow',  'annual'),
+        annualFinancingCashFlow:  buildFTSPeriods(annualFTS, 'financingCashFlow',  'annual'),
+        annualFreeCashFlow:       buildFTSPeriods(annualFTS, 'freeCashFlow',       'annual'),
+        // Quarterly — Income
+        quarterlyRevenue:           buildFTSPeriods(quarterlyFTS, 'totalRevenue', 'quarterly'),
+        quarterlyGrossProfit:       buildFTSPeriods(quarterlyFTS, 'grossProfit',  'quarterly'),
+        quarterlyNetIncome:         buildFTSPeriods(quarterlyFTS, 'netIncome',    'quarterly'),
+        // Quarterly — Balance Sheet
+        quarterlyTotalAssets:       buildFTSPeriods(quarterlyFTS, 'totalAssets',                         'quarterly'),
+        quarterlyTotalLiabilities:  buildFTSPeriods(quarterlyFTS, 'totalLiabilitiesNetMinorityInterest', 'quarterly'),
+        quarterlyNetCash:           buildNetCashPeriods(quarterlyFTS, 'quarterly'),
+        // Quarterly — Cash Flow
+        quarterlyOperatingCashFlow: buildFTSPeriods(quarterlyFTS, 'operatingCashFlow',  'quarterly'),
+        quarterlyInvestingCashFlow: buildFTSPeriods(quarterlyFTS, 'investingCashFlow',  'quarterly'),
+        quarterlyFinancingCashFlow: buildFTSPeriods(quarterlyFTS, 'financingCashFlow',  'quarterly'),
+        quarterlyFreeCashFlow:      buildFTSPeriods(quarterlyFTS, 'freeCashFlow',       'quarterly'),
       });
     } catch (e) {
       console.error('Stock detail error:', e);
