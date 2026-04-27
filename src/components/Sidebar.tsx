@@ -1,4 +1,5 @@
-import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut } from 'lucide-react';
+import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw } from 'lucide-react';
+import { User } from 'firebase/auth';
 import { cn } from '../lib/utils';
 
 type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive';
@@ -14,9 +15,21 @@ interface Props {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
   onLogout: () => void;
+  user: User;
+  isRefreshing: boolean;
+  onRefresh: () => void;
 }
 
-export default function Sidebar({ activeTab, onTabChange, onLogout }: Props) {
+export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefreshing, onRefresh }: Props) {
+  const initials = (user.email ?? user.displayName ?? '?')
+    .split(/[@.\s]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0].toUpperCase())
+    .join('');
+
+  const email = user.email ?? user.displayName ?? '';
+
   return (
     <div
       className={cn(
@@ -73,11 +86,45 @@ export default function Sidebar({ activeTab, onTabChange, onLogout }: Props) {
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="py-3 border-t border-zinc-800">
+      {/* Bottom controls */}
+      <div className="py-3 border-t border-zinc-800 flex flex-col gap-1">
+        {/* Refresh */}
+        <button
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          title="Refresh prices"
+          className="flex items-center gap-3 px-4 py-2.5 w-full text-left text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300 transition-all disabled:opacity-40"
+        >
+          <RefreshCw className={cn('w-5 h-5 shrink-0', isRefreshing && 'animate-spin')} />
+          <span
+            className={cn(
+              'text-[11px] font-bold uppercase tracking-widest whitespace-nowrap',
+              'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+            )}
+          >
+            Refresh Prices
+          </span>
+        </button>
+
+        {/* User avatar */}
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          <div className="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[8px] font-black text-zinc-300 shrink-0 select-none">
+            {initials}
+          </div>
+          <span
+            className={cn(
+              'text-[11px] text-zinc-400 whitespace-nowrap truncate max-w-[140px]',
+              'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+            )}
+          >
+            {email}
+          </span>
+        </div>
+
+        {/* Logout */}
         <button
           onClick={onLogout}
-          className="flex items-center gap-3 px-4 py-2.5 w-full text-left text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300 transition-all"
+          className="flex items-center gap-3 px-4 py-2.5 w-full text-left text-zinc-500 hover:bg-zinc-800/50 hover:text-rose-400 transition-all"
         >
           <LogOut className="w-5 h-5 shrink-0" />
           <span

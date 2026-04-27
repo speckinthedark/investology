@@ -10,7 +10,6 @@ import { fetchStockData, fetchPriceHistory } from './services/stockService';
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar';
-import Topbar from './components/Topbar';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
 import TransactionModal from './components/TransactionModal';
@@ -141,7 +140,14 @@ export default function App() {
       <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr', height: '100vh' }}>
         <Toaster position="top-center" theme="dark" richColors />
 
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={logout} />
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onLogout={logout}
+          user={user}
+          isRefreshing={isRefreshing}
+          onRefresh={refreshPrices}
+        />
 
         {/* Main column */}
         <div className="flex flex-col overflow-hidden">
@@ -151,8 +157,6 @@ export default function App() {
               <span className="font-mono text-xs">{firestoreError}</span>
             </div>
           )}
-
-          <Topbar user={user} isRefreshing={isRefreshing} onRefresh={refreshPrices} onLogout={logout} />
 
           {/* Persistent KPI header */}
           <div className="bg-zinc-900 border-b border-zinc-800 px-6 py-4 flex items-center justify-between shrink-0">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  collection, doc, addDoc, setDoc, getDoc, getDocs,
+  collection, doc, addDoc, setDoc, getDoc, getDocs, deleteDoc,
   onSnapshot, orderBy, query, serverTimestamp, Timestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -91,6 +91,23 @@ export function useChatSessions(uid: string) {
     await batch.commit();
   };
 
+  const deleteSession = async (sessionId: string): Promise<void> => {
+    if (!uid) return;
+    // Delete the session doc first so it's immediately removed from the list.
+    // If this succeeds, the onSnapshot fires and the chat disappears permanently.
+    await deleteDoc(doc(db, 'users', uid, 'chatSessions', sessionId));
+    // Clean up messages in the background — orphaned subcollection data doesn't
+    // resurface in the UI, so a failure here doesn't affect the user.
+    getDocs(collection(db, 'users', uid, 'chatSessions', sessionId, 'messages'))
+      .then((snap) => {
+        if (snap.empty) return;
+        const batch = writeBatch(db);
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        return batch.commit();
+      })
+      .catch((err) => console.warn('Session messages cleanup failed:', err));
+  };
+
   const setSessionTitle = async (sessionId: string, title: string): Promise<void> => {
     if (!uid) return;
     await setDoc(
@@ -126,6 +143,7 @@ export function useChatSessions(uid: string) {
     loadSessionMessages,
     appendMessage,
     setSessionTitle,
+    deleteSession,
     saveReport,
     loadReport,
   };

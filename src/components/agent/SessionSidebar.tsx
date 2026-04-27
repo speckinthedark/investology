@@ -1,4 +1,4 @@
-import { Plus, ShieldAlert, MessageSquare } from 'lucide-react';
+import { Plus, ShieldAlert, MessageSquare, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { ChatSession } from '../../types';
 
@@ -8,6 +8,7 @@ interface Props {
   onSelectReport: () => void;
   onSelectSession: (session: ChatSession) => void;
   onNewSession: () => void;
+  onDeleteSession: (session: ChatSession) => void;
   isCreating: boolean;
 }
 
@@ -30,6 +31,7 @@ export default function SessionSidebar({
   onSelectReport,
   onSelectSession,
   onNewSession,
+  onDeleteSession,
   isCreating,
 }: Props) {
   return (
@@ -70,24 +72,35 @@ export default function SessionSidebar({
 
       {/* Chat sessions */}
       {sessions.map((s) => (
-        <button
+        <div
           key={s.id}
-          onClick={() => onSelectSession(s)}
-          disabled={isCreating}
-          aria-current={activeView === s.id ? 'page' : undefined}
           className={cn(
-            'flex items-start gap-2.5 w-full px-3 py-2.5 rounded-xl text-left transition-all border disabled:opacity-40 disabled:cursor-not-allowed',
+            'group flex items-start gap-2.5 w-full px-3 py-2.5 rounded-xl transition-all border',
             activeView === s.id
               ? 'bg-zinc-800 border-zinc-600 text-white'
               : 'bg-transparent border-zinc-800 hover:bg-zinc-800/60 hover:border-zinc-700 text-zinc-300',
           )}
         >
-          <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-zinc-500" />
-          <div className="min-w-0 flex-1">
-            <div className="text-[11px] font-bold truncate">{s.title}</div>
-            <div className="text-[9px] text-zinc-500 mt-0.5">{formatAge(s.updatedAt)}</div>
-          </div>
-        </button>
+          <button
+            onClick={() => onSelectSession(s)}
+            disabled={isCreating}
+            className="flex items-start gap-2.5 flex-1 min-w-0 text-left disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-zinc-500" />
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-bold truncate">{s.title}</div>
+              <div className="text-[9px] text-zinc-500 mt-0.5">{formatAge(s.updatedAt)}</div>
+            </div>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDeleteSession(s); }}
+            disabled={isCreating}
+            className="opacity-0 group-hover:opacity-100 flex-shrink-0 p-0.5 text-zinc-600 hover:text-rose-400 transition-all disabled:cursor-not-allowed"
+            aria-label="Delete chat"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
       ))}
 
       {sessions.length === 0 && (

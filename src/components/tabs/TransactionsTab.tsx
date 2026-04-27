@@ -142,11 +142,11 @@ export default function TransactionsTab({
       {filtered.length > 0 ? (
         <div>
           {/* Column headers */}
-          <div className="grid grid-cols-[130px_80px_1fr_100px_110px_140px] px-6 py-3 border-b border-zinc-800">
-            {['Date', 'Type', 'Asset', 'Shares', 'Price', 'Total'].map((h, i) => (
+          <div className="grid grid-cols-[130px_80px_1fr_100px_120px_140px_64px] px-6 py-3 border-b border-zinc-800">
+            {['Date', 'Type', 'Asset', 'Shares', 'Price', 'Total', ''].map((h, i) => (
               <div
-                key={h}
-                className={cn('text-[10px] font-bold uppercase tracking-widest text-zinc-500', i >= 3 ? 'text-right' : '')}
+                key={h || 'actions'}
+                className={cn('text-[10px] font-bold uppercase tracking-widest text-zinc-500', i >= 3 && i < 6 ? 'text-right' : '')}
               >
                 {h}
               </div>
@@ -161,7 +161,7 @@ export default function TransactionsTab({
 
             return (
               <div key={tx.id}>
-                <div className="grid grid-cols-[130px_80px_1fr_100px_110px_140px] px-6 py-4 items-center group hover:bg-zinc-800/40 transition-colors">
+                <div className="grid grid-cols-[130px_80px_1fr_100px_120px_140px_64px] px-6 py-4 items-center hover:bg-zinc-800/40 transition-colors">
                   {/* Date */}
                   <div className="text-[11px] text-zinc-400 font-mono">
                     {format(new Date(tx.timestamp), 'yyyy-MM-dd')}
@@ -190,25 +190,25 @@ export default function TransactionsTab({
                     {isCash ? '–' : `$${(tx.price ?? 0).toFixed(2)}`}
                   </div>
 
-                  {/* Total + actions */}
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-sm font-mono font-bold text-white">
-                      ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => onEdit(tx)}
-                        className="p-1 text-zinc-500 hover:text-blue-400 transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => onDelete(tx.id!, tx.ticker)}
-                        className="p-1 text-zinc-500 hover:text-rose-400 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                  {/* Total */}
+                  <div className="text-right text-sm font-mono font-bold text-white">
+                    ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => onEdit(tx)}
+                      className="p-1 text-zinc-500 hover:text-blue-400 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(tx.id!, tx.ticker)}
+                      className="p-1 text-zinc-500 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
                 {idx < filtered.length - 1 && (

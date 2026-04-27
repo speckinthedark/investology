@@ -31,7 +31,7 @@ async function createAdkSession(uid: string): Promise<string> {
 }
 
 export default function InsightsTab({ uid, holdings, stockPrices, cashBalance }: Props) {
-  const { sessions, sessionError, createSession, loadSessionMessages, appendMessage, setSessionTitle, saveReport, loadReport } =
+  const { sessions, sessionError, createSession, loadSessionMessages, appendMessage, setSessionTitle, deleteSession, saveReport, loadReport } =
     useChatSessions(uid);
 
   const [activeView, setActiveView] = useState<string>('report');
@@ -112,6 +112,14 @@ export default function InsightsTab({ uid, holdings, stockPrices, cashBalance }:
     return setSessionTitle(activeSessionRef.current.session.id, title);
   }, [setSessionTitle]);
 
+  const handleDeleteSession = async (session: ChatSession) => {
+    await deleteSession(session.id);
+    if (activeView === session.id) {
+      setActiveView('report');
+      setActiveSession(null);
+    }
+  };
+
   return (
     <div className="flex gap-6 items-start">
       {/* Sidebar */}
@@ -122,6 +130,7 @@ export default function InsightsTab({ uid, holdings, stockPrices, cashBalance }:
         onSelectReport={handleSelectReport}
         onSelectSession={handleSelectSession}
         onNewSession={handleNewSession}
+        onDeleteSession={handleDeleteSession}
         isCreating={isCreating}
       />
       {sessionError && (

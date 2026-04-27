@@ -317,7 +317,7 @@ export default function PerformanceTab({
         />
 
         {/* $10k hypothetical card — full width */}
-        <div className="col-span-2 lg:col-span-4 bg-zinc-900 rounded-[24px] p-6 border border-zinc-800">
+        <div className="col-span-2 lg:col-span-4 bg-zinc-900 rounded-xl p-6 border border-zinc-800">
           <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-5">
             $10,000 Invested · {periodLabel}
           </div>
@@ -544,7 +544,7 @@ function StatCard({
 }) {
   const color = positive === null ? 'text-zinc-500' : positive ? 'text-emerald-400' : 'text-rose-400';
   return (
-    <div className="bg-zinc-900 rounded-[24px] p-6 border border-zinc-800 flex flex-col gap-3">
+    <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</div>
         <Icon className={cn('w-4 h-4 shrink-0', color)} />
