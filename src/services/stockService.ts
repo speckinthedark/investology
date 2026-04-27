@@ -57,8 +57,10 @@ function mockStockData(ticker: string): StockData {
 export async function fetchStockDetail(ticker: string): Promise<StockDetail> {
   const res = await fetch(`/api/stock/detail/${encodeURIComponent(ticker.toUpperCase())}`);
   if (res.status === 400) {
-    const data = await res.json();
-    throw new Error(data.error ?? 'Ticker not found');
+    const text = await res.text();
+    let msg = 'Ticker not found';
+    try { msg = (JSON.parse(text) as { error?: string }).error ?? msg; } catch {}
+    throw new Error(msg);
   }
   if (!res.ok) throw new Error('Failed to fetch stock data');
   return res.json();
