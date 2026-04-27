@@ -11,7 +11,7 @@ export default function StockSearchBar({ onSearch, isLoading }: Props) {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && value.trim() && !isLoading) {
-      onSearch(value.trim().toUpperCase());
+      onSearch(value.trim());
     }
   };
 

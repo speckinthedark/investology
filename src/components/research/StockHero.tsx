@@ -40,7 +40,7 @@ export default function StockHero({ detail }: Props) {
           ${detail.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <div className={cn('text-xs font-bold mt-0.5', positive ? 'text-emerald-400' : 'text-rose-400')}>
-          {positive ? '▲' : '▼'} {positive ? '+' : ''}${Math.abs(detail.change).toFixed(2)} ({positive ? '+' : ''}{detail.changePercent.toFixed(2)}%) today
+          {positive ? '▲' : '▼'} {positive ? '+' : '-'}${Math.abs(detail.change).toFixed(2)} ({positive ? '+' : '-'}{Math.abs(detail.changePercent).toFixed(2)}%) today
         </div>
       </div>
     </div>
