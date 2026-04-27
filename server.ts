@@ -72,8 +72,8 @@ async function startServer() {
         yahooFinance.quoteSummary(ticker, { modules: ['cashflowStatementHistoryQuarterly'] as any }).catch(() => null),
       ]);
 
-      const price = (quote as any).regularMarketPrice ?? 0;
-      if (!price) return res.status(400).json({ error: `Ticker not found: ${ticker}` });
+      const price = (quote as any).regularMarketPrice ?? null;
+      if (price == null) return res.status(400).json({ error: `Ticker not found: ${ticker}` });
 
       const profile  = (summary as any)?.assetProfile ?? {};
       const detail   = (summary as any)?.summaryDetail ?? {};
@@ -94,7 +94,7 @@ async function startServer() {
         companyName: (quote as any).longName ?? (quote as any).shortName ?? ticker,
         exchange,
         tvSymbol,
-        sector:              profile.sector ?? 'Other',
+        sector:              profile.sector ?? '',
         industry:            profile.industry ?? '',
         country:             profile.country ?? '',
         website:             profile.website ?? '',
