@@ -7,14 +7,20 @@ const LOGO_SOURCES = (ticker: string) => [
 
 interface Props {
   ticker: string;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'circle';
 }
+
+const SIZE_CLASSES: Record<string, string> = {
+  sm:     'w-7 h-7 text-[9px] rounded-md',
+  md:     'w-10 h-10 text-xs rounded-lg',
+  circle: 'w-8 h-8 text-[10px] rounded-full',
+};
 
 export default function TickerLogo({ ticker, size = 'sm' }: Props) {
   const [srcIndex, setSrcIndex] = useState(0);
   const sources = LOGO_SOURCES(ticker);
   const onError = useCallback(() => setSrcIndex((i) => i + 1), []);
-  const dim = size === 'md' ? 'w-10 h-10 text-xs rounded-lg' : 'w-7 h-7 text-[9px] rounded-md';
+  const dim = SIZE_CLASSES[size];
 
   if (srcIndex >= sources.length) {
     return (
