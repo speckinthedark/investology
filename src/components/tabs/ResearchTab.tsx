@@ -58,10 +58,12 @@ export default function ResearchTab({ holdings }: Props) {
       {status === 'loading' && (
         <div className="flex flex-col gap-4 animate-pulse">
           <div className="h-20 bg-zinc-800/60 rounded-xl" />
-          <div className="h-[432px] bg-zinc-800/60 rounded-xl" />
-          <div className="grid gap-4" style={{ gridTemplateColumns: '5fr 8fr' }}>
-            <div className="h-96 bg-zinc-800/60 rounded-xl" />
-            <div className="h-96 bg-zinc-800/60 rounded-xl" />
+          <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 3fr' }}>
+            <div className="h-[700px] bg-zinc-800/60 rounded-xl" />
+            <div className="flex flex-col gap-4">
+              <div className="h-[432px] bg-zinc-800/60 rounded-xl" />
+              <div className="h-64 bg-zinc-800/60 rounded-xl" />
+            </div>
           </div>
         </div>
       )}
@@ -70,10 +72,12 @@ export default function ResearchTab({ holdings }: Props) {
         <>
           <StockHero detail={detail} />
           <PortfolioCallout holding={holding} currentPrice={detail.price} />
-          <TradingViewChart tvSymbol={detail.tvSymbol} />
-          <div className="grid gap-4" style={{ gridTemplateColumns: '5fr 8fr' }}>
+          <div className="grid gap-4 items-start" style={{ gridTemplateColumns: '1fr 3fr' }}>
             <StockStatsTable detail={detail} />
-            <FinancialsChart detail={detail} />
+            <div className="flex flex-col gap-4">
+              <TradingViewChart tvSymbol={detail.tvSymbol} />
+              <FinancialsChart detail={detail} />
+            </div>
           </div>
         </>
       )}
