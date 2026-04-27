@@ -7,6 +7,7 @@ import { Download, Trash2, Search, ArrowUpDown, ChevronUp, ChevronDown, PieChart
 import { format } from 'date-fns';
 import { Holding, StockData, SortConfig } from '../../types';
 import { cn } from '../../lib/utils';
+import { usePrivacy, HIDDEN } from '../../contexts/PrivacyContext';
 
 interface Props {
   holdings: Holding[];
@@ -101,6 +102,7 @@ const INVESTED_LEGEND = [
 ];
 
 export default function OverviewTab({ holdings, stockPrices, cashBalance, totalPortfolioValue, onDeleteHolding, onSelectAsset }: Props) {
+  const isHidden = usePrivacy();
   const [treemapView, setTreemapView] = useState<TreemapView>('day');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'marketValue', direction: 'desc' });
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -219,7 +221,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[5fr_4fr] gap-6">
       {/* Treemap */}
       <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
@@ -289,26 +291,26 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                             <>
                               <div className="flex justify-between gap-6">
                                 <span className="text-zinc-500 uppercase tracking-widest">Cost Basis</span>
-                                <span className="font-mono font-bold">${dCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="font-mono font-bold">{isHidden ? HIDDEN : `$${dCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
                               </div>
                               <div className="flex justify-between gap-6">
                                 <span className="text-zinc-500 uppercase tracking-widest">Market Val</span>
-                                <span className="font-mono font-bold">${d.marketValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="font-mono font-bold">{isHidden ? HIDDEN : `$${d.marketValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
                               </div>
                               <div className="flex justify-between gap-6 pt-1 border-t border-zinc-700">
                                 <span className="text-zinc-500 uppercase tracking-widest">% Invested</span>
-                                <span className="font-mono font-bold text-blue-400">{dInvestedShare.toFixed(2)}%</span>
+                                <span className="font-mono font-bold text-blue-400">{isHidden ? HIDDEN : `${dInvestedShare.toFixed(2)}%`}</span>
                               </div>
                             </>
                           ) : (
                             <>
                               <div className="flex justify-between gap-6">
                                 <span className="text-zinc-500 uppercase tracking-widest">Value</span>
-                                <span className="font-mono font-bold">${dValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="font-mono font-bold">{isHidden ? HIDDEN : `$${dValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
                               </div>
                               <div className="flex justify-between gap-6">
                                 <span className="text-zinc-500 uppercase tracking-widest">Portfolio</span>
-                                <span className="font-mono font-bold text-blue-400">{dShare.toFixed(2)}%</span>
+                                <span className="font-mono font-bold text-blue-400">{isHidden ? HIDDEN : `${dShare.toFixed(2)}%`}</span>
                               </div>
                               <div className="flex justify-between gap-6 pt-1 border-t border-zinc-700">
                                 <span className="text-zinc-500 uppercase tracking-widest">{treemapView === 'day' ? 'Day Δ' : 'Total Δ'}</span>
@@ -521,20 +523,20 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                       )}
                     </td>
                     <td className="px-6 py-5">
-                      <div className="font-mono text-sm text-white">{shares.toFixed(2)}</div>
+                      <div className="font-mono text-sm text-white">{isHidden ? HIDDEN : shares.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="font-mono text-sm text-white">${avgPrice.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className="font-mono text-sm font-bold text-white">${mv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div className="font-mono text-sm font-bold text-white">{isHidden ? HIDDEN : `$${mv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="font-mono text-sm font-bold text-blue-400">{share.toFixed(2)}%</div>
                     </td>
                     <td className="px-6 py-5">
                       <div className={cn('font-mono text-sm font-bold', gain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                        {gain >= 0 ? '+' : '−'}${Math.abs(gain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {isHidden ? HIDDEN : `${gain >= 0 ? '+' : '−'}$${Math.abs(gain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                       </div>
                       <div className={cn('text-[10px] font-bold', gain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                         {gain >= 0 ? '+' : ''}{gainPct.toFixed(2)}%

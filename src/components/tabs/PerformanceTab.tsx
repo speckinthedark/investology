@@ -8,6 +8,7 @@ import { TrendingUp, TrendingDown, Calendar, BarChart3 } from 'lucide-react';
 import { Transaction, PriceHistory } from '../../types';
 import { cn } from '../../lib/utils';
 import { fetchPriceHistory } from '../../services/stockService';
+import { usePrivacy, HIDDEN } from '../../contexts/PrivacyContext';
 
 interface Props {
   transactions: Transaction[];
@@ -99,6 +100,7 @@ function computeBenchmarkReturns(
 export default function PerformanceTab({
   transactions, priceHistory, isPriceHistoryLoading, totalStockValue, totalCostBasis,
 }: Props) {
+  const isHidden = usePrivacy();
   const [period, setPeriod] = useState<Period>('1y');
   const [activeBenchmarks, setActiveBenchmarks] = useState<Set<Benchmark>>(new Set());
   const [benchmarkHistory, setBenchmarkHistory] = useState<PriceHistory>({});
@@ -287,7 +289,7 @@ export default function PerformanceTab({
         <StatCard
           label="Unrealized P/L"
           value={`${simpleReturn >= 0 ? '+' : ''}${simpleReturn.toFixed(2)}%`}
-          sub={`$${totalCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2 })} cost basis`}
+          sub={isHidden ? `${HIDDEN} cost basis` : `$${totalCostBasis.toLocaleString(undefined, { minimumFractionDigits: 2 })} cost basis`}
           positive={simpleReturn >= 0}
           icon={simpleReturn >= 0 ? TrendingUp : TrendingDown}
         />
@@ -390,12 +392,12 @@ export default function PerformanceTab({
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 10, fontWeight: 700, fill: TICK }}
-                  tickFormatter={fmt$}
+                  tickFormatter={isHidden ? () => '•••' : fmt$}
                   width={52}
                 />
                 <Tooltip
                   {...tooltipBase}
-                  formatter={(v: number) => [`$${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 'Portfolio Value']}
+                  formatter={(v: number) => [isHidden ? HIDDEN : `$${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 'Portfolio Value']}
                 />
                 {/* Starting value label */}
                 {periodData.length > 0 && (
@@ -404,7 +406,7 @@ export default function PerformanceTab({
                     y={periodData[0].value}
                     r={0}
                     label={{
-                      value: fmt$(periodData[0].value),
+                      value: isHidden ? HIDDEN : fmt$(periodData[0].value),
                       position: 'top',
                       style: { fontSize: 10, fontWeight: 700, fill: '#a78bfa' },
                     }}

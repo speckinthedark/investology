@@ -4,6 +4,7 @@ import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard } from 'luc
 import { Transaction, TransactionType } from '../../types';
 import { cn } from '../../lib/utils';
 import TickerLogo from '../shared/TickerLogo';
+import { usePrivacy, HIDDEN } from '../../contexts/PrivacyContext';
 
 interface Props {
   transactions: Transaction[];
@@ -35,6 +36,7 @@ const TYPE_BADGE: Record<TransactionType, { label: string; border: string; text:
 export default function TransactionsTab({
   transactions, onEdit, onDelete, onAddTrade, onAddCash, onImport, onExport, onClearAll,
 }: Props) {
+  const isHidden = usePrivacy();
   const [filter, setFilter] = useState<Filter>('all');
 
   const filtered = [...transactions]
@@ -158,7 +160,7 @@ export default function TransactionsTab({
 
                   {/* Shares */}
                   <div className="text-right text-sm font-mono text-zinc-300">
-                    {isCash ? '–' : (tx.shares ?? 0).toLocaleString()}
+                    {isCash ? '–' : isHidden ? HIDDEN : (tx.shares ?? 0).toLocaleString()}
                   </div>
 
                   {/* Price */}
@@ -168,7 +170,7 @@ export default function TransactionsTab({
 
                   {/* Total */}
                   <div className="text-right text-sm font-mono font-bold text-white">
-                    ${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {isHidden ? HIDDEN : `$${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                   </div>
 
                   {/* Actions */}

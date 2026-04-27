@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit } from 'lucide-react';
+import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
@@ -23,6 +23,7 @@ import ResearchTab from './components/tabs/ResearchTab';
 
 import { StockData, Transaction, TransactionType, PriceHistory } from './types';
 import { cn } from './lib/utils';
+import { PrivacyContext, HIDDEN } from './contexts/PrivacyContext';
 
 type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
 
@@ -36,6 +37,7 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
+  const [isHidden, setIsHidden] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; type: TransactionType; editing?: Transaction }>({ open: false, type: 'buy' });
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -138,6 +140,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+    <PrivacyContext.Provider value={isHidden}>
       <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr', height: '100vh' }}>
         <Toaster position="top-center" theme="dark" richColors />
 
@@ -163,28 +166,39 @@ export default function App() {
           <div className="bg-zinc-900 border-b border-zinc-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
-              <div className="text-3xl sm:text-6xl font-light tracking-tighter text-white mb-3 sm:mb-4">
-                ${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <div className="text-3xl sm:text-6xl font-light tracking-tighter text-white">
+                  {isHidden ? HIDDEN : `$${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                </div>
+                <button
+                  onClick={() => setIsHidden((h) => !h)}
+                  className="p-1.5 text-zinc-600 hover:text-zinc-400 transition-colors shrink-0 self-end mb-1 sm:mb-2"
+                  title={isHidden ? 'Show values' : 'Hide values'}
+                >
+                  {isHidden ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                </button>
               </div>
               <div className="flex items-center gap-4 sm:gap-8 flex-wrap">
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Cash</div>
                   <div className="text-base font-black text-blue-400">
-                    ${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    {isHidden ? HIDDEN : `$${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                   </div>
                 </div>
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Total Gain</div>
                   <div className={cn('text-base font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                    {totalPortfolioGain >= 0 ? '+' : ''}${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    {' '}({totalPortfolioGainPct.toFixed(2)}%)
+                    {isHidden
+                      ? HIDDEN
+                      : `${totalPortfolioGain >= 0 ? '+' : ''}$${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalPortfolioGainPct.toFixed(2)}%)`}
                   </div>
                 </div>
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Today</div>
                   <div className={cn('text-base font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                    {totalDayChange >= 0 ? '+' : ''}${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    {' '}({totalDayChangePct.toFixed(2)}%)
+                    {isHidden
+                      ? HIDDEN
+                      : `${totalDayChange >= 0 ? '+' : ''}$${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalDayChangePct.toFixed(2)}%)`}
                   </div>
                 </div>
               </div>
@@ -209,7 +223,7 @@ export default function App() {
           </div>
 
           {/* Scrollable tab content */}
-          <div className={cn('flex-1 min-h-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
+          <div className={cn('flex-1 min-h-0 custom-scrollbar', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -330,6 +344,7 @@ export default function App() {
           />
         )}
       </div>
+    </PrivacyContext.Provider>
     </ErrorBoundary>
   );
 }
