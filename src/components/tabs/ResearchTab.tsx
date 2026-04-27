@@ -27,6 +27,7 @@ export default function ResearchTab({ holdings }: Props) {
   const handleSearch = async (ticker: string) => {
     setStatus('loading');
     setErrorMsg('');
+    setDetail(null);
     setInsights(null);
     try {
       const [detailData, insightsData] = await Promise.allSettled([
@@ -39,10 +40,14 @@ export default function ResearchTab({ holdings }: Props) {
       }
 
       setDetail(detailData.value);
-      if (insightsData.status === 'fulfilled') setInsights(insightsData.value);
+      if (insightsData.status === 'fulfilled') {
+        setInsights(insightsData.value);
+      } else {
+        console.warn('Insights fetch failed (non-critical):', insightsData.reason);
+      }
       setStatus('success');
-    } catch (e: any) {
-      setErrorMsg(e?.message ?? 'Failed to load data. Try again.');
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : 'Failed to load data. Try again.');
       setStatus('error');
     }
   };
