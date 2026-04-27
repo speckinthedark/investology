@@ -1,14 +1,15 @@
-import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw, Search } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { cn } from '../lib/utils';
 
-type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive';
+type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview',      label: 'Overview',     icon: LayoutDashboard },
   { id: 'transactions',  label: 'Transactions', icon: ArrowUpDown },
   { id: 'performance',   label: 'Performance',  icon: TrendingUp },
   { id: 'deep-dive',     label: 'Deep Dive',    icon: BrainCircuit },
+  { id: 'research',     label: 'Research',     icon: Search },
 ];
 
 interface Props {

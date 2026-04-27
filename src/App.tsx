@@ -19,11 +19,12 @@ import OverviewTab from './components/tabs/OverviewTab';
 import TransactionsTab from './components/tabs/TransactionsTab';
 import PerformanceTab from './components/tabs/PerformanceTab';
 import InsightsTab from './components/tabs/InsightsTab';
+import ResearchTab from './components/tabs/ResearchTab';
 
 import { StockData, Transaction, TransactionType, PriceHistory } from './types';
 import { cn } from './lib/utils';
 
-type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive';
+type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
 
 export default function App() {
   const { user, isReady, login, logout } = useAuth();
@@ -254,6 +255,9 @@ export default function App() {
                   <InsightsTab
                     {...{ uid: user.uid, holdings, stockPrices, cashBalance } as any}
                   />
+                )}
+                {activeTab === 'research' && (
+                  <ResearchTab holdings={holdings} />
                 )}
               </motion.div>
             </AnimatePresence>
