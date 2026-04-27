@@ -1,4 +1,4 @@
-import { StockData, PriceHistory, StockDetail } from '../types';
+import { StockData, PriceHistory, StockDetail, StockInsights } from '../types';
 
 export async function fetchStockData(ticker: string): Promise<StockData> {
   try {
@@ -63,5 +63,11 @@ export async function fetchStockDetail(ticker: string): Promise<StockDetail> {
     throw new Error(msg);
   }
   if (!res.ok) throw new Error('Failed to fetch stock data');
+  return res.json();
+}
+
+export async function fetchStockInsights(ticker: string): Promise<StockInsights> {
+  const res = await fetch(`/api/stock/insights/${encodeURIComponent(ticker.toUpperCase())}`);
+  if (!res.ok) throw new Error('Failed to fetch insights');
   return res.json();
 }
