@@ -29,26 +29,27 @@ const EXCHANGE_MAP: Record<string, string> = {
   PCX: 'AMEX', ASE: 'AMEX',
 };
 
-function buildFinancialPeriods(
-  statements: any[],
-  valueKey: string,
-  secondKey?: string,
-  mode: 'annual' | 'quarterly' = 'annual',
+function buildFTSPeriods(
+  data: any[],
+  field: string,
+  count: number,
+  mode: 'annual' | 'quarterly',
 ): { label: string; value: number }[] {
-  return statements
-    .slice(0, mode === 'annual' ? 4 : 8)
-    .map((s: any) => {
-      const date = s.endDate instanceof Date ? s.endDate : new Date(s.endDate);
+  return [...data]
+    .filter((e: any) => e[field] != null)
+    .sort((a: any, b: any) => {
+      const toMs = (d: any) => d instanceof Date ? d.getTime() : (d as number) * 1000;
+      return toMs(a.date) - toMs(b.date);
+    })
+    .slice(-count)
+    .map((entry: any) => {
+      const ts = entry.date instanceof Date ? entry.date.getTime() : (entry.date as number) * 1000;
+      const date = new Date(ts);
       const year = date.getFullYear();
       const quarter = Math.ceil((date.getMonth() + 1) / 3);
       const label = mode === 'annual' ? `FY${year}` : `Q${quarter} ${year}`;
-      const raw = s[valueKey] ?? 0;
-      const raw2 = secondKey ? (s[secondKey] ?? 0) : 0;
-      // For FCF: operatingCashFlow - abs(capex). Yahoo reports capex as negative.
-      const value = secondKey ? raw + raw2 : raw;
-      return { label, value };
-    })
-    .reverse();
+      return { label, value: entry[field] as number };
+    });
 }
 
 async function startServer() {
@@ -61,15 +62,20 @@ async function startServer() {
   app.get('/api/stock/detail/:ticker', async (req, res) => {
     const ticker = (req.params.ticker as string).toUpperCase();
     try {
-      const [quote, summary, incAnnual, incQuarterly, cfAnnual, cfQuarterly] = await Promise.all([
+      const sixYearsAgo = new Date(Date.now() - 6 * 365 * 86400 * 1000).toISOString().split('T')[0];
+      const threeYearsAgo = new Date(Date.now() - 3 * 365 * 86400 * 1000).toISOString().split('T')[0];
+
+      const [quote, summary, annualFTS, quarterlyFTS] = await Promise.all([
         yahooFinance.quote(ticker),
         yahooFinance.quoteSummary(ticker, {
           modules: ['assetProfile', 'summaryDetail', 'defaultKeyStatistics', 'financialData'] as any,
         }).catch(() => null),
-        yahooFinance.quoteSummary(ticker, { modules: ['incomeStatementHistory'] as any }).catch(() => null),
-        yahooFinance.quoteSummary(ticker, { modules: ['incomeStatementHistoryQuarterly'] as any }).catch(() => null),
-        yahooFinance.quoteSummary(ticker, { modules: ['cashflowStatementHistory'] as any }).catch(() => null),
-        yahooFinance.quoteSummary(ticker, { modules: ['cashflowStatementHistoryQuarterly'] as any }).catch(() => null),
+        (yahooFinance as any).fundamentalsTimeSeries(ticker, {
+          period1: sixYearsAgo, type: 'annual', module: 'all',
+        }).catch(() => []),
+        (yahooFinance as any).fundamentalsTimeSeries(ticker, {
+          period1: threeYearsAgo, type: 'quarterly', module: 'all',
+        }).catch(() => []),
       ]);
 
       const price = (quote as any).regularMarketPrice ?? null;
@@ -83,11 +89,6 @@ async function startServer() {
       const rawExchange = (quote as any).exchange ?? '';
       const exchange = EXCHANGE_MAP[rawExchange] ?? (quote as any).fullExchangeName ?? rawExchange;
       const tvSymbol = exchange ? `${exchange}:${ticker}` : ticker;
-
-      const incStmtsAnnual     = (incAnnual as any)?.incomeStatementHistory?.incomeStatementHistory ?? [];
-      const incStmtsQuarterly  = (incQuarterly as any)?.incomeStatementHistoryQuarterly?.incomeStatementHistoryQuarterly ?? [];
-      const cfStmtsAnnual      = (cfAnnual as any)?.cashflowStatementHistory?.cashflowStatements ?? [];
-      const cfStmtsQuarterly   = (cfQuarterly as any)?.cashflowStatementHistoryQuarterly?.cashflowStatementsQuarterly ?? [];
 
       res.json({
         ticker,
@@ -121,12 +122,12 @@ async function startServer() {
         returnOnEquity:   finData.returnOnEquity ?? null,
         freeCashflow:     finData.freeCashflow ?? null,
 
-        annualRevenue:       buildFinancialPeriods(incStmtsAnnual, 'totalRevenue', undefined, 'annual'),
-        annualNetIncome:     buildFinancialPeriods(incStmtsAnnual, 'netIncome', undefined, 'annual'),
-        annualFreeCashFlow:  buildFinancialPeriods(cfStmtsAnnual, 'totalCashFromOperatingActivities', 'capitalExpenditures', 'annual'),
-        quarterlyRevenue:    buildFinancialPeriods(incStmtsQuarterly, 'totalRevenue', undefined, 'quarterly'),
-        quarterlyNetIncome:  buildFinancialPeriods(incStmtsQuarterly, 'netIncome', undefined, 'quarterly'),
-        quarterlyFreeCashFlow: buildFinancialPeriods(cfStmtsQuarterly, 'totalCashFromOperatingActivities', 'capitalExpenditures', 'quarterly'),
+        annualRevenue:          buildFTSPeriods(annualFTS,    'totalRevenue', 4, 'annual'),
+        annualNetIncome:        buildFTSPeriods(annualFTS,    'netIncome',    4, 'annual'),
+        annualFreeCashFlow:     buildFTSPeriods(annualFTS,    'freeCashFlow', 4, 'annual'),
+        quarterlyRevenue:       buildFTSPeriods(quarterlyFTS, 'totalRevenue', 8, 'quarterly'),
+        quarterlyNetIncome:     buildFTSPeriods(quarterlyFTS, 'netIncome',    8, 'quarterly'),
+        quarterlyFreeCashFlow:  buildFTSPeriods(quarterlyFTS, 'freeCashFlow', 8, 'quarterly'),
       });
     } catch (e) {
       console.error('Stock detail error:', e);
