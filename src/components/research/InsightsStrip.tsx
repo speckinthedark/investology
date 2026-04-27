@@ -37,7 +37,7 @@ export default function InsightsStrip({ insights, currentPrice }: Props) {
           {recommendation.targetPrice != null && (
             <div className="flex flex-col">
               <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Target</span>
-              <span className="text-sm font-bold text-white font-mono">
+              <span className="text-sm font-bold font-mono text-white">
                 ${recommendation.targetPrice.toFixed(2)}
                 {upside != null && (
                   <span className={cn('ml-1.5 text-[10px]', upside >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
@@ -47,7 +47,7 @@ export default function InsightsStrip({ insights, currentPrice }: Props) {
               </span>
             </div>
           )}
-          <span className="text-[9px] text-zinc-600 uppercase tracking-widest">{recommendation.provider}</span>
+          {recommendation.provider && <span className="text-[9px] text-zinc-600 uppercase tracking-widest">{recommendation.provider}</span>}
         </div>
       )}
 
@@ -66,7 +66,7 @@ export default function InsightsStrip({ insights, currentPrice }: Props) {
               )}
             </span>
           </div>
-          <span className="text-[9px] text-zinc-600 uppercase tracking-widest">{valuation.provider}</span>
+          {valuation.provider && <span className="text-[9px] text-zinc-600 uppercase tracking-widest">{valuation.provider}</span>}
         </div>
       )}
     </div>
