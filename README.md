@@ -1,65 +1,59 @@
 # StockPulse Tracker
 
-A personal stock portfolio tracker with real-time quotes, multi-broker import, historical performance charts, and AI-powered portfolio analysis.
+A personal stock portfolio tracker with real-time quotes, multi-broker import, historical performance charts, stock research, and AI-powered portfolio analysis.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%2B%20Auth-orange)
-![Gemini](https://img.shields.io/badge/AI-Gemini%202.0%20Flash-purple)
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Firebase Setup](#firebase-setup)
-  - [Environment Variables](#environment-variables)
-  - [Running Locally](#running-locally)
-  - [Production Build](#production-build)
-- [Data Sources](#data-sources)
-- [Importing Trade History](#importing-trade-history)
-- [Firestore Security Rules](#firestore-security-rules)
-- [Project Structure](#project-structure)
-- [Known Limitations](#known-limitations)
+![Yahoo Finance](https://img.shields.io/badge/Market%20Data-Yahoo%20Finance-purple)
+![Gemini](https://img.shields.io/badge/AI-Gemini%20%2B%20Google%20ADK-blue)
 
 ---
 
 ## Features
 
-### Portfolio Dashboard
-- Total portfolio value with real-time day change and total unrealized P&L
-- Cash balance tracked separately — does not affect performance calculations
-- One-click price refresh via Finnhub
+### KPI Header (always visible)
+- Total portfolio value with USD / INR / AUD toggle (live FX rates)
+- Cash balance, total unrealised gain, today's gain
+- Time-weighted YTD return (stock-only, monthly chain-linked)
+- S&P 500 YTD return for benchmark comparison
+- Privacy toggle — masks all dollar amounts across the entire app
 
 ### Overview Tab
-- Holdings table with search and multi-column sort
-- Interactive **treemap** with three views: day change, total return, and portfolio weight
-- **Sector allocation** pie chart built from Finnhub industry data
-- 7-day price sparkline per holding
-- Click any holding to open a detailed side panel with full transaction history for that ticker
+- Holdings table with multi-column sort, 7-day sparklines, and company logos
+- Click any ticker logo or name to jump directly to Research for that stock
+- Interactive **treemap** with three views: day change, total return, portfolio weight
+- **Sector allocation** donut chart with hover highlights
 
 ### Transactions Tab
-- Full transaction log (buys, sells, deposits, withdrawals) with edit and delete
-- CSV export compatible with the StockPulse import format
-- Import wizard supporting three sources (see [Importing Trade History](#importing-trade-history))
-- Clear all transactions with double confirmation
+- Full transaction log (buys, sells, deposits, withdrawals) with inline edit and delete
+- CSV export and import (StockPulse format)
+- Import wizard supporting eToro XLSX and IBKR Flex Query XML
 
 ### Performance Tab
-- Portfolio value area chart with 6M / 1Y / All time periods
-- Month-over-month returns bar chart (green/red)
-- Stat cards: Unrealized P&L, YTD return, best month, worst month, win rate
+- Portfolio value area chart with configurable time periods
+- Month-over-month returns bar chart
+- $10,000 invested comparison chart (portfolio vs per-holding)
+- Per-holding performance breakdown
 
-### Deep Dive Tab
-- AI-generated portfolio analysis via **Gemini 2.0 Flash**
-- Two analyst personas: **Buffett / Munger** (moats, intrinsic value) and **Peter Lynch** (GARP, ten-baggers)
-- Persona preference persisted per user in Firestore
+### Research Tab
+- **Default idle state**: tabbed market screeners — Day Gainers, Day Losers, Most Active, Growth Tech, Undervalued Growth, Undervalued Large Caps — 10 stocks each with price, day %, 52W %, market cap, volume ratio, P/E
+- **Stock detail view**: search any ticker or click one from your holdings or a screener
+  - Company hero with exchange, sector, and industry badges
+  - Portfolio callout if you hold the stock
+  - Analyst rating strip (rating, price target, upside %) and valuation summary
+  - Left column: Trading Snapshot, Fundamentals, Company info, Technical Outlook, Key Technicals — all scrollable
+  - Right column: TradingView price chart, financials bar chart (income / balance sheet / cash flow), bull & bear case summaries — independently scrollable
+  - Back button to return to screeners
+
+### AI Insights Tab
+- Multi-session agent chat powered by **Google ADK**
+- Agents with access to live fundamentals, stock quotes, price history, and DCF modelling
+- Structured outputs: DCF result cards, portfolio risk reports rendered inline
+- Session history sidebar with per-session titles
 
 ### Authentication
-- Google Sign-In via Firebase Auth (popup with redirect fallback)
+- Google Sign-In via Firebase Auth
 - All data isolated per user — no data is shared across accounts
 
 ---
@@ -69,50 +63,50 @@ A personal stock portfolio tracker with real-time quotes, multi-broker import, h
 | Layer | Technology |
 |---|---|
 | Frontend | React 19, TypeScript, Vite 6 |
-| Styling | Tailwind CSS v4, Framer Motion |
-| Charts | Recharts |
-| Backend | Express.js on Node.js (via `tsx`) |
-| Database | Firebase Firestore |
-| Auth | Firebase Authentication (Google) |
-| AI | Google Gemini 2.0 Flash (`@google/genai`) |
-| Stock data | Finnhub API (real-time quotes) |
-| Price history | Yahoo Finance via `yahoo-finance2` |
-| File parsing | `xlsx` (eToro XLSX), `fast-xml-parser` (IBKR XML) |
-| File uploads | `multer` |
-| Notifications | `sonner` |
+| Styling | Tailwind CSS v4 (no config file) |
+| Animations | Framer Motion |
+| Charts | Recharts, TradingView widget embed |
+| Backend | Express 4, `tsx` (no compile step) |
+| Auth + DB | Firebase Authentication (Google), Firestore |
+| Market data | `yahoo-finance2` (quotes, insights, screener, FX rates) |
+| AI agents | Google ADK (`@google/adk`), Gemini (`@google/genai`) |
+| File parsing | `xlsx` (eToro), `fast-xml-parser` (IBKR) |
+| Notifications | Sonner |
 
 ---
 
 ## Architecture
 
-The project uses a single unified server (`server.ts`) that:
-- Serves the **Express API** for all `/api/*` routes
-- In development: proxies to **Vite's dev server** (HMR included)
-- In production: serves the pre-built **static files** from `dist/`
+A single Express process serves everything. There is no separate frontend dev server.
 
 ```
 Browser
   │
   ▼
-Express server (server.ts :3000)
-  ├── /api/stock/:ticker         → Finnhub (real-time quote + 7-day candles)
-  ├── /api/stock-ai/:ticker      → Gemini (AI fallback if Finnhub fails)
-  ├── /api/price-history         → Yahoo Finance (monthly OHLC for charts)
-  ├── /api/insights              → Gemini (portfolio analysis)
-  ├── /api/import/etoro          → Parse eToro XLSX upload
-  ├── /api/import/ibkr           → Parse IBKR Flex Query XML upload
+Express server  (server.ts — port 3000)
+  ├── /api/stock/:ticker              → yahoo-finance2 quote + sparkline
+  ├── /api/stock/detail/:ticker       → full fundamentals + financials history
+  ├── /api/stock/insights/:ticker     → analyst rating, valuation, technicals, bull/bear
+  ├── /api/screener/:screenerId       → yahoo-finance2 screener (10 results)
+  ├── /api/price-history              → monthly closes for Performance charts
+  ├── /api/market/sp500-ytd           → ^GSPC YTD return
+  ├── /api/market/fx-rates            → USD → INR, AUD live rates
+  ├── /api/insights                   → Gemini portfolio analysis
+  ├── /api/agent/session              → create ADK chat session
+  ├── /api/agent/report               → portfolio risk report (SSE)
+  ├── /api/agent/chat                 → agent chat turn (SSE)
+  ├── /api/import/etoro               → parse eToro XLSX
+  ├── /api/import/ibkr                → parse IBKR XML
   └── /* (dev: Vite middleware, prod: static dist/)
 
 Firebase (client-side SDK)
-  ├── Authentication             → Google Sign-In
+  ├── Authentication                  → Google Sign-In
   └── Firestore
         └── /users/{uid}
-              ├── holdings/{ticker}
-              ├── transactions/{id}
-              └── settings/portfolio
+              ├── holdings/{ticker}   → shares + averagePrice
+              ├── transactions/{id}   → full transaction log
+              └── settings/portfolio  → cash balance
 ```
-
-**Data fallback chain for stock quotes:** Finnhub → Gemini AI → mock data. This ensures the UI never breaks even if Finnhub is unavailable or rate-limited.
 
 ---
 
@@ -121,142 +115,95 @@ Firebase (client-side SDK)
 ### Prerequisites
 
 - **Node.js** 18 or later
-- **npm** 9 or later
 - A **Firebase** project with Firestore and Google Auth enabled
-- A **Finnhub** API key (free tier available at [finnhub.io](https://finnhub.io))
-- A **Gemini** API key (free tier available at [aistudio.google.com](https://aistudio.google.com))
+- A **Gemini** API key (free tier at [aistudio.google.com](https://aistudio.google.com))
 
 ### Firebase Setup
 
-1. Go to [Firebase Console](https://console.firebase.google.com) and create a new project.
+1. Create a project at [Firebase Console](https://console.firebase.google.com).
+2. Enable **Authentication → Sign-in method → Google**.
+3. Enable **Firestore Database**.
+4. In **Project Settings → General → Your apps**, register a Web app.
+5. Download or copy the config — it gets saved as `firebase-applet-config.json` in the repo root (gitignored):
 
-2. Enable **Authentication** → Sign-in method → **Google**.
-
-3. Enable **Firestore Database** in production mode.
-
-4. Deploy the security rules (see [Firestore Security Rules](#firestore-security-rules)).
-
-5. In **Project Settings → General → Your apps**, register a Web app and copy the config object.
-
-6. Create `src/firebase.ts` with your project credentials (this file is gitignored):
-
-```ts
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: "...",
-  authDomain: "...",
-  projectId: "...",
-  storageBucket: "...",
-  messagingSenderId: "...",
-  appId: "...",
-};
-
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+```json
+{
+  "apiKey": "...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "...",
+  "firestoreDatabaseId": "(default)"
+}
 ```
 
 ### Environment Variables
 
-Copy `.env.example` to `.env` and fill in your keys:
-
-```bash
-cp .env.example .env
-```
+Create a `.env` file at the repo root:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-FINNHUB_API_KEY=your_finnhub_api_key
-APP_URL=http://localhost:3000
 ```
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | Yes | Powers AI portfolio analysis and the stock data fallback |
-| `FINNHUB_API_KEY` | Yes | Real-time stock quotes and 7-day price history |
-| `APP_URL` | No | Base URL of the deployed app (used for self-referential links) |
+| `GEMINI_API_KEY` | Yes | Powers AI portfolio analysis and ADK agents |
+| `FINNHUB_API_KEY` | No | Legacy — no longer used for primary data |
 
 ### Running Locally
 
 ```bash
-# Install dependencies
 npm install
-
-# Start the development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The Express API and Vite dev server run together on the same port.
+Open [http://localhost:3000](http://localhost:3000). Sign in with Google.
+
+> **Note:** `server.ts` does not hot-reload. After any backend change, stop the process and run `npm run dev` again. The Vite frontend hot-reloads normally.
 
 ### Production Build
 
 ```bash
-# Build the React app
 npm run build
-
-# Start the production server
 NODE_ENV=production npm run dev
 ```
 
-The server will serve the compiled static files from `dist/` instead of using Vite middleware.
-
-**Available scripts:**
-
 | Script | Description |
 |---|---|
-| `npm run dev` | Start development server (Express + Vite) |
-| `npm run build` | Compile TypeScript and bundle with Vite |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run TypeScript type checking |
-| `npm run clean` | Delete the `dist/` directory |
-
----
-
-## Data Sources
-
-### Finnhub (real-time quotes)
-Used for current price, day change, and 7-day candle history. The free tier allows up to 60 API calls/minute. Each price refresh calls Finnhub once per holding.
-
-### Yahoo Finance (monthly history)
-Used exclusively for the Performance tab charts. Fetches monthly OHLC data from the start of the previous year to the present. No API key required — uses the `yahoo-finance2` npm package.
-
-### Google Gemini 2.0 Flash
-- **Portfolio insights**: Generates analysis of your holdings through a selected investment persona.
-- **Stock data fallback**: If Finnhub fails, Gemini generates realistic estimated stock data so the UI remains functional.
+| `npm run dev` | Start dev server (Express + Vite, port 3000) |
+| `npm run build` | Bundle frontend to `dist/` |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | TypeScript type-check (no emit) |
+| `npm run clean` | Delete `dist/` |
 
 ---
 
 ## Importing Trade History
 
-The import wizard (Transactions tab → Import) supports three sources. Transactions from multiple sources are **merged** — importing IBKR after eToro combines both into one portfolio. Holdings are recomputed from the full transaction history after each import.
+Open **Transactions → Import**. Transactions from multiple sources are merged — importing IBKR after eToro combines both into one portfolio.
 
 ### eToro (XLSX)
 1. eToro → Portfolio → History → ⚙ → Account Statement
-2. Set date range to your full account history
-3. Download the XLS/XLSX file
-4. Upload under the **eToro** tab in the import wizard
+2. Set date range to your full account history and download the XLSX
+3. Upload under the **eToro** tab in the import wizard
 
-> **Note:** eToro only exports closed positions. Currently open positions must be added manually via Trade Asset.
+> eToro statements only include closed positions. Currently open positions must be added manually via Trade Asset.
 
-> **Note:** eToro may cap exports to 12 months. For accounts older than one year, download one statement per year and upload them one at a time.
+> eToro caps exports to 12 months. For older accounts, download one statement per year and upload them one at a time.
 
 ### Interactive Brokers (XML Flex Query)
 1. IBKR Client Portal → Performance & Reports → Flex Queries
-2. Create a new **Activity Flex Query** with the **Trades** section enabled
-3. Set the Asset Category filter to **Stocks** only
-4. Set output format to **XML** and date range to your full account history
-5. For accounts spanning multiple years, run one query per year
-6. For multiple IBKR accounts, include all accounts in a single Flex Query — cross-account transfers are handled automatically
+2. Create an **Activity Flex Query** with the **Trades** section enabled
+3. Set Asset Category filter to **Stocks only**, output format to **XML**
+4. For multi-year accounts, run one query per year and upload each file separately
+5. For multiple IBKR accounts, include all in a single Flex Query — cross-account transfers are handled automatically
 
 **Required Trades fields:** Symbol, Date/Time, Buy/Sell, Quantity, Trade Price, Asset Category
 
-### StockPulse CSV Backup
-Re-import a CSV previously exported from StockPulse. Use on a fresh account only — importing into an account with existing transactions will duplicate them.
+### StockPulse CSV
+Re-import a CSV previously exported from StockPulse. Use on a fresh account only — importing into an existing account will duplicate transactions.
 
-**CSV format:**
 ```
 date,type,ticker,shares,price
 2024-03-09T10:22:00.000Z,buy,AAPL,5,172.30
@@ -267,19 +214,10 @@ date,type,ticker,shares,price
 
 ## Firestore Security Rules
 
-The rules in `firestore.rules` enforce that each user can only read and write their own data. Deploy them via the Firebase Console (Firestore → Rules tab) or the Firebase CLI:
+Rules live in `firestore.rules`. Deploy via the Firebase Console (Firestore → Rules) or CLI:
 
 ```bash
 npx firebase deploy --only firestore:rules
-```
-
-**Data model:**
-
-```
-/users/{uid}                          # User profile (displayName, email, selectedPersona)
-/users/{uid}/holdings/{ticker}        # Current positions (shares + averagePrice)
-/users/{uid}/transactions/{id}        # Full transaction log
-/users/{uid}/settings/portfolio       # Cash balance
 ```
 
 ---
@@ -288,47 +226,63 @@ npx firebase deploy --only firestore:rules
 
 ```
 .
-├── server.ts                  # Express API + Vite dev middleware
-├── firestore.rules            # Firestore security rules
-├── src/
-│   ├── App.tsx                # Root component, state management, tab routing
-│   ├── firebase.ts            # Firebase initialisation (gitignored — create manually)
-│   ├── types.ts               # Shared TypeScript interfaces
-│   ├── hooks/
-│   │   ├── useAuth.ts         # Firebase Auth + persona persistence
-│   │   └── usePortfolio.ts    # Firestore CRUD: holdings, transactions, cash
-│   ├── services/
-│   │   ├── stockService.ts    # Finnhub → Gemini fallback → mock data chain
-│   │   └── geminiService.ts   # Portfolio insights API call
-│   ├── components/
-│   │   ├── tabs/
-│   │   │   ├── OverviewTab.tsx       # Treemap, sector chart, holdings table
-│   │   │   ├── TransactionsTab.tsx   # Transaction log, import/export controls
-│   │   │   ├── PerformanceTab.tsx    # Area chart, monthly returns, stat cards
-│   │   │   └── InsightsTab.tsx       # AI deep dive UI
-│   │   ├── ImportGuidePanel.tsx      # Step-by-step import wizard + file upload
-│   │   ├── AssetDetailPanel.tsx      # Per-ticker transaction history side panel
-│   │   ├── TransactionModal.tsx      # Add / edit transaction form
-│   │   ├── CashBalanceModal.tsx      # Set cash balance dialog
-│   │   ├── ConfirmDialog.tsx         # Destructive action confirmation
-│   │   ├── LoginPage.tsx             # Google Sign-In screen
-│   │   ├── Nav.tsx                   # Top navigation bar
-│   │   └── ErrorBoundary.tsx         # React error boundary
-│   └── lib/
-│       └── utils.ts           # cn() helper (clsx + tailwind-merge)
-├── .env.example               # Environment variable template
-├── vite.config.ts             # Vite configuration
-├── tsconfig.json              # TypeScript configuration
-└── package.json
+├── server.ts                        # Express server + all API routes
+├── firebase-applet-config.json      # Firebase credentials (gitignored — create manually)
+├── agents/
+│   ├── index.ts                     # Google ADK agent definitions
+│   ├── tools.ts                     # Agent tool implementations (fundamentals, DCF, etc.)
+│   └── prompts.ts                   # Agent system prompts
+└── src/
+    ├── App.tsx                      # Root: KPI header, tab routing, global state
+    ├── types.ts                     # All shared TypeScript interfaces
+    ├── firebase.ts                  # Firebase init (auth + db)
+    ├── index.css                    # Tailwind import + custom utilities
+    ├── contexts/
+    │   └── PrivacyContext.tsx       # Global privacy toggle
+    ├── hooks/
+    │   ├── useAuth.ts               # Firebase auth state
+    │   ├── usePortfolio.ts          # Firestore CRUD: holdings, transactions, cash
+    │   ├── useAgentStream.ts        # SSE stream consumer for agent responses
+    │   └── useChatSessions.ts       # Chat session management
+    ├── services/
+    │   └── stockService.ts          # All frontend → backend market data fetches
+    ├── lib/
+    │   ├── utils.ts                 # cn() helper (clsx + tailwind-merge)
+    │   └── portfolio.ts             # Financial computations (YTD TWR)
+    └── components/
+        ├── tabs/
+        │   ├── OverviewTab.tsx      # Holdings table, treemap, sector donut
+        │   ├── TransactionsTab.tsx  # Transaction log, import/export
+        │   ├── PerformanceTab.tsx   # Portfolio value chart, per-holding performance
+        │   ├── ResearchTab.tsx      # Stock research orchestrator
+        │   └── InsightsTab.tsx      # AI agent chat interface
+        ├── research/
+        │   ├── ScreenerView.tsx     # Tabbed market screeners (default idle state)
+        │   ├── StockHero.tsx        # Ticker header (name, price, badges)
+        │   ├── StockStatsTable.tsx  # Stats: fundamentals, technicals, key levels
+        │   ├── StockSearchBar.tsx   # Ticker search input
+        │   ├── TradingViewChart.tsx # TradingView chart embed
+        │   ├── FinancialsChart.tsx  # Revenue / profit / cashflow bar charts
+        │   ├── InsightsStrip.tsx    # Analyst rating + valuation strip
+        │   ├── BullBearPanel.tsx    # Bull / bear case bullet points
+        │   └── PortfolioCallout.tsx # "You hold X shares" banner
+        ├── agent/
+        │   ├── AgentChat.tsx
+        │   ├── AgentMessage.tsx
+        │   ├── SessionSidebar.tsx
+        │   ├── PortfolioRiskReport.tsx
+        │   ├── DCFResultCard.tsx
+        │   └── MentionInput.tsx
+        └── shared/
+            └── TickerLogo.tsx       # Company logo (Parqet CDN, FMP fallback)
 ```
 
 ---
 
 ## Known Limitations
 
-- **Finnhub free tier**: Limited to 60 requests/minute. Large portfolios (20+ holdings) may hit rate limits on refresh. The app falls back to Gemini AI estimates automatically.
-- **Yahoo Finance**: Unofficial API — not guaranteed for production use. Occasionally returns incomplete data for tickers listed on non-US exchanges.
-- **eToro open positions**: The eToro account statement does not include currently open positions. These must be added manually.
-- **IBKR date range**: A single IBKR Flex Query is limited to one year of data. Multi-year accounts require one XML file per year, imported sequentially.
-- **Equities only**: The import pipeline filters to equity (`STK`) trades only. Options, futures, and crypto are excluded.
-- **AI insights**: Portfolio analysis is based on Gemini's training knowledge and the holdings snapshot sent at request time — not live market data or real-time news.
+- **Yahoo Finance**: Unofficial API — not guaranteed for production use. May return incomplete data for non-US exchange tickers or during market outages.
+- **eToro open positions**: Account statements don't include currently open positions. Add them manually via Trade Asset.
+- **IBKR date range**: A single Flex Query is limited to one year. Multi-year accounts need one file per year uploaded sequentially.
+- **Equities only**: The import pipeline filters to `STK` (stock) trades. Options, futures, and crypto are excluded.
+- **YTD TWR**: Computed from monthly price snapshots. Tickers bought and fully sold within the current year (no longer in the portfolio) are excluded from the calculation as their historical prices are not retained.
