@@ -9,3 +9,4 @@ coverage/
 sample_reports/
 .claude/
 .playwright-mcp/
+.superpowers/
