@@ -72,6 +72,16 @@ export async function fetchStockInsights(ticker: string): Promise<StockInsights>
   return res.json();
 }
 
+export async function fetchFXRates(): Promise<{ INR: number | null; AUD: number | null }> {
+  try {
+    const res = await fetch('/api/market/fx-rates');
+    if (!res.ok) return { INR: null, AUD: null };
+    return res.json();
+  } catch {
+    return { INR: null, AUD: null };
+  }
+}
+
 export async function fetchSP500YTD(): Promise<number | null> {
   try {
     const res = await fetch('/api/market/sp500-ytd');

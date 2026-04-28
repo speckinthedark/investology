@@ -499,6 +499,23 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     }
   });
 
+  // --- Live FX rates (USD base) ---
+  app.get('/api/market/fx-rates', async (req, res) => {
+    try {
+      const [inr, aud] = await Promise.all([
+        yahooFinance.quote('USDINR=X'),
+        yahooFinance.quote('USDAUD=X'),
+      ]);
+      res.json({
+        INR: (inr as any).regularMarketPrice ?? null,
+        AUD: (aud as any).regularMarketPrice ?? null,
+      });
+    } catch (e) {
+      console.error('FX rates error:', e);
+      res.status(500).json({ error: 'Failed to fetch FX rates' });
+    }
+  });
+
   // --- S&P 500 YTD performance ---
   app.get('/api/market/sp500-ytd', async (req, res) => {
     try {

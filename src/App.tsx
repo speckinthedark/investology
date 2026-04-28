@@ -5,7 +5,7 @@ import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
 import { usePortfolio } from './hooks/usePortfolio';
-import { fetchStockData, fetchPriceHistory, fetchSP500YTD } from './services/stockService';
+import { fetchStockData, fetchPriceHistory, fetchSP500YTD, fetchFXRates } from './services/stockService';
 
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -41,6 +41,8 @@ export default function App() {
   const [isHidden, setIsHidden] = useState(false);
   const [researchTicker, setResearchTicker] = useState<string | null>(null);
   const [sp500YTD, setSP500YTD] = useState<number | null>(null);
+  const [currency, setCurrency] = useState<'USD' | 'INR' | 'AUD'>('USD');
+  const [fxRates, setFxRates] = useState<{ INR: number | null; AUD: number | null }>({ INR: null, AUD: null });
   const [showCashModal, setShowCashModal] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; type: TransactionType; editing?: Transaction }>({ open: false, type: 'buy' });
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -69,6 +71,7 @@ export default function App() {
   }, [holdingTickersKey]);
 
   useEffect(() => { fetchSP500YTD().then(setSP500YTD); }, []);
+  useEffect(() => { fetchFXRates().then(setFxRates); }, []);
 
   const refreshPrices = async () => {
     if (holdings.length === 0) return;
@@ -178,15 +181,31 @@ export default function App() {
               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
               <div className="flex items-center gap-2 mb-3 sm:mb-4">
                 <div className="text-3xl sm:text-6xl font-light tracking-tighter text-white">
-                  {isHidden ? HIDDEN : `$${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  {isHidden ? HIDDEN : (() => {
+                    const rate = currency === 'INR' ? fxRates.INR : currency === 'AUD' ? fxRates.AUD : 1;
+                    if (rate == null) return `$${totalPortfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    const converted = totalPortfolioValue * rate;
+                    if (currency === 'INR') return `₹${converted.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    if (currency === 'AUD') return `A$${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    return `$${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                  })()}
                 </div>
-                <button
-                  onClick={() => setIsHidden((h) => !h)}
-                  className="p-1.5 text-zinc-600 hover:text-zinc-400 transition-colors shrink-0 self-end mb-1 sm:mb-2"
-                  title={isHidden ? 'Show values' : 'Hide values'}
-                >
-                  {isHidden ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0 self-end mb-1 sm:mb-2">
+                  <button
+                    onClick={() => setCurrency((c) => c === 'USD' ? 'INR' : c === 'INR' ? 'AUD' : 'USD')}
+                    className="px-1.5 py-0.5 rounded text-[9px] font-black tracking-widest text-zinc-500 hover:text-zinc-300 border border-zinc-700/60 hover:border-zinc-500 transition-colors"
+                    title="Toggle currency"
+                  >
+                    {currency}
+                  </button>
+                  <button
+                    onClick={() => setIsHidden((h) => !h)}
+                    className="p-1.5 text-zinc-600 hover:text-zinc-400 transition-colors"
+                    title={isHidden ? 'Show values' : 'Hide values'}
+                  >
+                    {isHidden ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  </button>
+                </div>
               </div>
               <div className="flex items-center gap-4 sm:gap-8 flex-wrap">
                 <div>
