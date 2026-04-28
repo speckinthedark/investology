@@ -29,6 +29,25 @@ const EXCHANGE_MAP: Record<string, string> = {
   PCX: 'AMEX', ASE: 'AMEX',
 };
 
+function shapeOutlook(o: any): {
+  stateDescription: string; direction: string; score: number; scoreDescription: string;
+  sectorDirection: string | null; sectorScore: number | null; sectorScoreDescription: string | null;
+  indexDirection: string; indexScore: number; indexScoreDescription: string;
+} {
+  return {
+    stateDescription: o.stateDescription,
+    direction: o.direction,
+    score: o.score,
+    scoreDescription: o.scoreDescription,
+    sectorDirection: o.sectorDirection ?? null,
+    sectorScore: o.sectorScore ?? null,
+    sectorScoreDescription: o.sectorScoreDescription ?? null,
+    indexDirection: o.indexDirection,
+    indexScore: o.indexScore,
+    indexScoreDescription: o.indexScoreDescription,
+  };
+}
+
 function buildFTSPeriods(
   data: any[],
   field: string,
@@ -194,6 +213,60 @@ async function startServer() {
     }
   });
 
+  // --- Yahoo Finance Insights for Research tab ---
+  app.get('/api/stock/insights/:ticker', async (req, res) => {
+    const ticker = (req.params.ticker as string).toUpperCase();
+    try {
+      const raw = await yahooFinance.insights(ticker, { reportsCount: 0 });
+
+      res.json({
+        recommendation: raw.recommendation
+          ? {
+              rating: raw.recommendation.rating,
+              targetPrice: raw.recommendation.targetPrice ?? null,
+              provider: raw.recommendation.provider,
+            }
+          : null,
+        valuation: raw.instrumentInfo?.valuation
+          ? {
+              description: raw.instrumentInfo.valuation.description ?? null,
+              discount: raw.instrumentInfo.valuation.discount ?? null,
+              relativeValue: raw.instrumentInfo.valuation.relativeValue ?? null,
+              provider: raw.instrumentInfo.valuation.provider,
+            }
+          : null,
+        technicalEvents: raw.instrumentInfo?.technicalEvents
+          ? {
+              shortTermOutlook: shapeOutlook(raw.instrumentInfo.technicalEvents.shortTermOutlook),
+              intermediateTermOutlook: shapeOutlook(raw.instrumentInfo.technicalEvents.intermediateTermOutlook),
+              longTermOutlook: shapeOutlook(raw.instrumentInfo.technicalEvents.longTermOutlook),
+            }
+          : null,
+        keyTechnicals: raw.instrumentInfo?.keyTechnicals
+          ? {
+              support: raw.instrumentInfo.keyTechnicals.support ?? null,
+              resistance: raw.instrumentInfo.keyTechnicals.resistance ?? null,
+              stopLoss: raw.instrumentInfo.keyTechnicals.stopLoss ?? null,
+              provider: raw.instrumentInfo.keyTechnicals.provider,
+            }
+          : null,
+        upsell: raw.upsell
+          ? {
+              bullishSummary: raw.upsell.msBullishSummary ?? null,
+              bearishSummary: raw.upsell.msBearishSummary ?? null,
+              companyName: raw.upsell.companyName ?? null,
+            }
+          : null,
+      });
+    } catch (e) {
+      console.error('Insights error:', e);
+      res.status(500).json({ error: 'Failed to fetch insights' });
+    }
+  });
+
+  // NOTE: This catch-all must remain BELOW all /api/stock/[specific]/:ticker routes
+  // (e.g. /api/stock/detail/:ticker, /api/stock/insights/:ticker). Express matches
+  // routes in registration order; moving this above them would silently swallow requests.
   // --- Stock quote + 7-day sparkline ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
@@ -423,6 +496,73 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     } finally {
       res.write('data: [DONE]\n\n');
       res.end();
+    }
+  });
+
+  // --- Live FX rates (USD base) ---
+  app.get('/api/market/fx-rates', async (req, res) => {
+    try {
+      const [inr, aud] = await Promise.all([
+        yahooFinance.quote('USDINR=X'),
+        yahooFinance.quote('USDAUD=X'),
+      ]);
+      res.json({
+        INR: (inr as any).regularMarketPrice ?? null,
+        AUD: (aud as any).regularMarketPrice ?? null,
+      });
+    } catch (e) {
+      console.error('FX rates error:', e);
+      res.status(500).json({ error: 'Failed to fetch FX rates' });
+    }
+  });
+
+  // --- S&P 500 YTD performance ---
+  app.get('/api/market/sp500-ytd', async (req, res) => {
+    try {
+      const year = new Date().getFullYear();
+      const period1 = `${year - 1}-12-26`; // late Dec to capture last trading day of prev year
+      const chart = await (yahooFinance as any).chart('^GSPC', { period1, interval: '1d' });
+      const quotes: { date: Date; close: number | null }[] = (chart.quotes ?? []).filter(
+        (q: any) => q.close != null,
+      );
+      if (quotes.length === 0) return res.status(500).json({ error: 'No S&P 500 data' });
+
+      const janFirst = new Date(year, 0, 1).getTime();
+      const prevYearQuotes = quotes.filter((q) => new Date(q.date).getTime() < janFirst);
+      if (prevYearQuotes.length === 0) return res.status(500).json({ error: 'No baseline data' });
+
+      const baseline = prevYearQuotes[prevYearQuotes.length - 1].close as number;
+      const current  = quotes[quotes.length - 1].close as number;
+      res.json({ ytdPct: ((current - baseline) / baseline) * 100 });
+    } catch (e) {
+      console.error('S&P 500 YTD error:', e);
+      res.status(500).json({ error: 'Failed to fetch S&P 500 data' });
+    }
+  });
+
+  // --- Yahoo Finance screener ---
+  app.get('/api/screener/:screenerId', async (req, res) => {
+    const { screenerId } = req.params;
+    try {
+      const result = await (yahooFinance as any).screener({
+        scrIds: screenerId,
+        count: 10,
+      });
+      const quotes = (result.quotes ?? []).map((q: any) => ({
+        symbol:                    q.symbol,
+        shortName:                 q.shortName ?? q.symbol,
+        regularMarketPrice:        q.regularMarketPrice ?? null,
+        regularMarketChangePercent: q.regularMarketChangePercent ?? null,
+        marketCap:                 q.marketCap ?? null,
+        regularMarketVolume:       q.regularMarketVolume ?? null,
+        averageDailyVolume3Month:  q.averageDailyVolume3Month ?? null,
+        trailingPE:                q.trailingPE ?? null,
+        fiftyTwoWeekChangePercent: q.fiftyTwoWeekChangePercent ?? null,
+      }));
+      res.json({ quotes });
+    } catch (e) {
+      console.error('Screener error:', e);
+      res.status(500).json({ error: 'Failed to fetch screener data' });
     }
   });
 

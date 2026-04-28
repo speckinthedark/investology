@@ -16,6 +16,7 @@ interface Props {
   totalPortfolioValue: number;
   onDeleteHolding: (ticker: string) => void;
   onSelectAsset: (ticker: string) => void;
+  onResearchTicker: (ticker: string) => void;
 }
 
 type TreemapView = 'day' | 'total' | 'invested';
@@ -101,7 +102,7 @@ const INVESTED_LEGEND = [
   { label: '>30%', color: '#60a5fa' },
 ];
 
-export default function OverviewTab({ holdings, stockPrices, cashBalance, totalPortfolioValue, onDeleteHolding, onSelectAsset }: Props) {
+export default function OverviewTab({ holdings, stockPrices, cashBalance, totalPortfolioValue, onDeleteHolding, onSelectAsset, onResearchTicker }: Props) {
   const isHidden = usePrivacy();
   const [treemapView, setTreemapView] = useState<TreemapView>('day');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'marketValue', direction: 'desc' });
@@ -506,9 +507,12 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                 return (
                   <tr key={h.ticker} className="hover:bg-zinc-800/40 transition-colors group">
                     <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
+                      <div
+                        className="flex items-center gap-3 cursor-pointer group/ticker"
+                        onClick={() => onResearchTicker(h.ticker)}
+                      >
                         <TickerLogo ticker={h.ticker} size="circle" />
-                        <div className="font-black text-base tracking-tighter text-white">{h.ticker}</div>
+                        <div className="font-black text-base tracking-tighter text-white group-hover/ticker:text-blue-400 transition-colors">{h.ticker}</div>
                       </div>
                     </td>
                     <td className="px-6 py-5">

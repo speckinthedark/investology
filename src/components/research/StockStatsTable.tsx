@@ -1,8 +1,35 @@
-import { StockDetail } from '../../types';
+import { StockDetail, StockInsights, InsightsOutlook, InsightsDirection } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface Props {
   detail: StockDetail;
+  insights?: StockInsights | null;
+}
+
+const DIRECTION_STYLE: Record<InsightsDirection, { badge: string; dot: string }> = {
+  Bullish: { badge: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30', dot: 'bg-emerald-500' },
+  Bearish: { badge: 'text-rose-400 bg-rose-500/10 border-rose-500/30',          dot: 'bg-rose-500' },
+  Neutral: { badge: 'text-zinc-400 bg-zinc-700/40 border-zinc-600/40',          dot: 'bg-zinc-500' },
+};
+
+function OutlookRow({ label, outlook }: { label: string; outlook: InsightsOutlook }) {
+  const style = DIRECTION_STYLE[outlook.direction];
+  const filled = Math.min(5, Math.max(0, Math.round(outlook.score)));
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-center px-3 py-2 border-b border-zinc-800/50 last:border-b-0">
+      <span className="text-[11px] text-zinc-500">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <span className={cn('px-1.5 py-0.5 rounded border text-[9px] font-black uppercase tracking-widest', style.badge)}>
+          {outlook.direction}
+        </span>
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className={cn('w-1.5 h-1.5 rounded-full', i < filled ? style.dot : 'bg-zinc-700')} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function fmtPrice(n: number | null): string {
@@ -63,7 +90,7 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
-export default function StockStatsTable({ detail }: Props) {
+export default function StockStatsTable({ detail, insights }: Props) {
   const pctPositive = (n: number | null) => n !== null && n > 0 ? 'green' : n !== null && n < 0 ? 'red' : undefined;
 
   const dayRange = (detail.dayLow !== null && detail.dayHigh !== null)
@@ -113,6 +140,24 @@ export default function StockStatsTable({ detail }: Props) {
       <Row label="Current Ratio"     value={detail.currentRatio !== null ? detail.currentRatio.toFixed(2) : '—'} />
       <Row label="Quick Ratio"       value={detail.quickRatio !== null ? detail.quickRatio.toFixed(2) : '—'} />
       <Row label="Website"           value={detail.website ? detail.website.replace(/^https?:\/\//, '') : '—'} color="muted" />
+
+      {insights?.technicalEvents && (
+        <>
+          <SectionHeader label="Technical Outlook" />
+          <OutlookRow label="Short Term"   outlook={insights.technicalEvents.shortTermOutlook} />
+          <OutlookRow label="Intermediate" outlook={insights.technicalEvents.intermediateTermOutlook} />
+          <OutlookRow label="Long Term"    outlook={insights.technicalEvents.longTermOutlook} />
+        </>
+      )}
+
+      {insights?.keyTechnicals && (
+        <>
+          <SectionHeader label="Key Technicals" />
+          <Row label="Support"    value={insights.keyTechnicals.support    != null ? `$${insights.keyTechnicals.support.toFixed(2)}`    : '—'} color="green" />
+          <Row label="Resistance" value={insights.keyTechnicals.resistance != null ? `$${insights.keyTechnicals.resistance.toFixed(2)}` : '—'} color="red" />
+          <Row label="Stop Loss"  value={insights.keyTechnicals.stopLoss   != null ? `$${insights.keyTechnicals.stopLoss.toFixed(2)}`   : '—'} color="muted" />
+        </>
+      )}
     </div>
   );
 }

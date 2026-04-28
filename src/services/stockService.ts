@@ -1,4 +1,4 @@
-import { StockData, PriceHistory, StockDetail } from '../types';
+import { StockData, PriceHistory, StockDetail, StockInsights, ScreenerQuote } from '../types';
 
 export async function fetchStockData(ticker: string): Promise<StockData> {
   try {
@@ -64,4 +64,38 @@ export async function fetchStockDetail(ticker: string): Promise<StockDetail> {
   }
   if (!res.ok) throw new Error('Failed to fetch stock data');
   return res.json();
+}
+
+export async function fetchStockInsights(ticker: string): Promise<StockInsights> {
+  const res = await fetch(`/api/stock/insights/${encodeURIComponent(ticker.toUpperCase())}`);
+  if (!res.ok) throw new Error('Failed to fetch insights');
+  return res.json();
+}
+
+export async function fetchFXRates(): Promise<{ INR: number | null; AUD: number | null }> {
+  try {
+    const res = await fetch('/api/market/fx-rates');
+    if (!res.ok) return { INR: null, AUD: null };
+    return res.json();
+  } catch {
+    return { INR: null, AUD: null };
+  }
+}
+
+export async function fetchSP500YTD(): Promise<number | null> {
+  try {
+    const res = await fetch('/api/market/sp500-ytd');
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data.ytdPct === 'number' ? data.ytdPct : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchScreener(screenerId: string): Promise<ScreenerQuote[]> {
+  const res = await fetch(`/api/screener/${encodeURIComponent(screenerId)}`);
+  if (!res.ok) throw new Error('Failed to fetch screener');
+  const data = await res.json();
+  return data.quotes ?? [];
 }
