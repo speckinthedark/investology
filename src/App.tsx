@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
 import { usePortfolio } from './hooks/usePortfolio';
-import { fetchStockData, fetchPriceHistory } from './services/stockService';
+import { fetchStockData, fetchPriceHistory, fetchSP500YTD } from './services/stockService';
 
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -24,6 +24,7 @@ import ResearchTab from './components/tabs/ResearchTab';
 import { StockData, Transaction, TransactionType, PriceHistory } from './types';
 import { cn } from './lib/utils';
 import { PrivacyContext, HIDDEN } from './contexts/PrivacyContext';
+import { computeYTDTWR } from './lib/portfolio';
 
 type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
 
@@ -39,6 +40,7 @@ export default function App() {
 
   const [isHidden, setIsHidden] = useState(false);
   const [researchTicker, setResearchTicker] = useState<string | null>(null);
+  const [sp500YTD, setSP500YTD] = useState<number | null>(null);
   const [showCashModal, setShowCashModal] = useState(false);
   const [modal, setModal] = useState<{ open: boolean; type: TransactionType; editing?: Transaction }>({ open: false, type: 'buy' });
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -66,6 +68,8 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holdingTickersKey]);
 
+  useEffect(() => { fetchSP500YTD().then(setSP500YTD); }, []);
+
   const refreshPrices = async () => {
     if (holdings.length === 0) return;
     setIsRefreshing(true);
@@ -86,6 +90,11 @@ export default function App() {
   const totalPortfolioGainPct = totalCostBasis > 0 ? (totalPortfolioGain / totalCostBasis) * 100 : 0;
   const totalDayChange = holdings.reduce((acc, h) => acc + h.shares * (stockPrices[h.ticker]?.change ?? 0), 0);
   const totalDayChangePct = totalPortfolioValue - totalDayChange > 0 ? (totalDayChange / (totalPortfolioValue - totalDayChange)) * 100 : 0;
+
+  const ytdTWR = useMemo(
+    () => computeYTDTWR(transactions, priceHistory, stockPrices),
+    [transactions, priceHistory, stockPrices],
+  );
 
   const handleExport = () => {
     const sorted = [...transactions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -191,7 +200,7 @@ export default function App() {
                   <div className={cn('text-base font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {isHidden
                       ? HIDDEN
-                      : `${totalPortfolioGain >= 0 ? '+' : ''}$${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalPortfolioGainPct.toFixed(2)}%)`}
+                      : `${totalPortfolioGain >= 0 ? '+' : ''}$${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${totalPortfolioGainPct.toFixed(2)}%)`}
                   </div>
                 </div>
                 <div>
@@ -199,9 +208,25 @@ export default function App() {
                   <div className={cn('text-base font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {isHidden
                       ? HIDDEN
-                      : `${totalDayChange >= 0 ? '+' : ''}$${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2 })} (${totalDayChangePct.toFixed(2)}%)`}
+                      : `${totalDayChange >= 0 ? '+' : ''}$${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${totalDayChangePct.toFixed(2)}%)`}
                   </div>
                 </div>
+                {ytdTWR !== null && !isPriceHistoryLoading && (
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">YTD Return</div>
+                    <div className={cn('text-base font-black', ytdTWR >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                      {isHidden ? HIDDEN : `${ytdTWR >= 0 ? '+' : ''}${ytdTWR.toFixed(2)}%`}
+                    </div>
+                  </div>
+                )}
+                {sp500YTD !== null && (
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">S&amp;P 500 YTD</div>
+                    <div className={cn('text-base font-black', sp500YTD >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                      {`${sp500YTD >= 0 ? '+' : ''}${sp500YTD.toFixed(2)}%`}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

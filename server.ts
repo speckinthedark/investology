@@ -499,6 +499,30 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     }
   });
 
+  // --- S&P 500 YTD performance ---
+  app.get('/api/market/sp500-ytd', async (req, res) => {
+    try {
+      const year = new Date().getFullYear();
+      const period1 = `${year - 1}-12-26`; // late Dec to capture last trading day of prev year
+      const chart = await (yahooFinance as any).chart('^GSPC', { period1, interval: '1d' });
+      const quotes: { date: Date; close: number | null }[] = (chart.quotes ?? []).filter(
+        (q: any) => q.close != null,
+      );
+      if (quotes.length === 0) return res.status(500).json({ error: 'No S&P 500 data' });
+
+      const janFirst = new Date(year, 0, 1).getTime();
+      const prevYearQuotes = quotes.filter((q) => new Date(q.date).getTime() < janFirst);
+      if (prevYearQuotes.length === 0) return res.status(500).json({ error: 'No baseline data' });
+
+      const baseline = prevYearQuotes[prevYearQuotes.length - 1].close as number;
+      const current  = quotes[quotes.length - 1].close as number;
+      res.json({ ytdPct: ((current - baseline) / baseline) * 100 });
+    } catch (e) {
+      console.error('S&P 500 YTD error:', e);
+      res.status(500).json({ error: 'Failed to fetch S&P 500 data' });
+    }
+  });
+
   // --- Yahoo Finance screener ---
   app.get('/api/screener/:screenerId', async (req, res) => {
     const { screenerId } = req.params;

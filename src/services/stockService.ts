@@ -72,6 +72,17 @@ export async function fetchStockInsights(ticker: string): Promise<StockInsights>
   return res.json();
 }
 
+export async function fetchSP500YTD(): Promise<number | null> {
+  try {
+    const res = await fetch('/api/market/sp500-ytd');
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data.ytdPct === 'number' ? data.ytdPct : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchScreener(screenerId: string): Promise<ScreenerQuote[]> {
   const res = await fetch(`/api/screener/${encodeURIComponent(screenerId)}`);
   if (!res.ok) throw new Error('Failed to fetch screener');
