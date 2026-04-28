@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import TickerLogo from '../shared/TickerLogo';
 import {
-  ResponsiveContainer, Treemap, Tooltip, PieChart, Pie, Cell, Sector, LineChart, Line,
+  ResponsiveContainer, Treemap, Tooltip, PieChart, Pie, Cell, Sector,
+  AreaChart, Area,
 } from 'recharts';
 import { Download, Trash2, Search, ArrowUpDown, ChevronUp, ChevronDown, PieChart as PieChartIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -475,7 +476,7 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                   { key: 'marketValue', label: 'Mkt Value' },
                   { key: 'share',       label: '% Share' },
                   { key: 'gain',        label: 'Gain / Loss' },
-                  { key: null,          label: '7D Trend' },
+                  { key: null,          label: '21D Trend' },
                   { key: null,          label: '' },
                 ].map(({ key, label }, i) => (
                   <th
@@ -548,11 +549,25 @@ export default function OverviewTab({ holdings, stockPrices, cashBalance, totalP
                     </td>
                     <td className="px-6 py-5 w-28">
                       {p?.history && p.history.length > 0 ? (
-                        <div className="h-9 w-20">
+                        <div className="h-10 w-24">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={p.history}>
-                              <Line type="monotone" dataKey="price" stroke={gain >= 0 ? '#34d399' : '#f87171'} strokeWidth={2} dot={false} isAnimationActive={false} />
-                            </LineChart>
+                            <AreaChart data={p.history} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
+                              <defs>
+                                <linearGradient id={`grad-${h.ticker}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={gain >= 0 ? '#34d399' : '#f87171'} stopOpacity={0.35} />
+                                  <stop offset="100%" stopColor={gain >= 0 ? '#34d399' : '#f87171'} stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <Area
+                                type="monotone"
+                                dataKey="price"
+                                stroke={gain >= 0 ? '#34d399' : '#f87171'}
+                                strokeWidth={1.5}
+                                fill={`url(#grad-${h.ticker})`}
+                                dot={false}
+                                isAnimationActive={false}
+                              />
+                            </AreaChart>
                           </ResponsiveContainer>
                         </div>
                       ) : (

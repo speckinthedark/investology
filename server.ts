@@ -267,12 +267,12 @@ async function startServer() {
   // NOTE: This catch-all must remain BELOW all /api/stock/[specific]/:ticker routes
   // (e.g. /api/stock/detail/:ticker, /api/stock/insights/:ticker). Express matches
   // routes in registration order; moving this above them would silently swallow requests.
-  // --- Stock quote + 7-day sparkline ---
+  // --- Stock quote + 21-day sparkline ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
 
     try {
-      const from = new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0];
+      const from = new Date(Date.now() - 35 * 86400000).toISOString().split('T')[0];
 
       const [quote, chartData, summary] = await Promise.all([
         yahooFinance.quote(ticker),
