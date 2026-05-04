@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard, Search, X } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
 import { cn } from '../../lib/utils';
 import TickerLogo from '../shared/TickerLogo';
@@ -38,14 +38,33 @@ export default function TransactionsTab({
 }: Props) {
   const isHidden = usePrivacy();
   const [filter, setFilter] = useState<Filter>('all');
+  const [tickerSearch, setTickerSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const filtered = [...transactions]
-    .filter((tx) => {
-      if (filter === 'buy')  return tx.type === 'buy';
-      if (filter === 'sell') return tx.type === 'sell';
-      if (filter === 'cash') return tx.type === 'deposit' || tx.type === 'withdrawal';
-      return true;
-    })
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, []);
+
+  const typeFiltered = [...transactions].filter((tx) => {
+    if (filter === 'buy')  return tx.type === 'buy';
+    if (filter === 'sell') return tx.type === 'sell';
+    if (filter === 'cash') return tx.type === 'deposit' || tx.type === 'withdrawal';
+    return true;
+  });
+
+  const suggestions = [...new Set(typeFiltered.map((tx) => tx.ticker))]
+    .filter((t) => !tickerSearch || t.startsWith(tickerSearch))
+    .sort();
+
+  const filtered = typeFiltered
+    .filter((tx) => !tickerSearch || tx.ticker.startsWith(tickerSearch))
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
