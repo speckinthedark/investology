@@ -95,6 +95,52 @@ export default function TransactionsTab({
             ))}
           </div>
 
+          {/* Ticker search */}
+          <div ref={wrapperRef} className="relative">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg w-40">
+              <Search className="w-3 h-3 text-zinc-500 shrink-0" />
+              <input
+                type="text"
+                value={tickerSearch}
+                placeholder="SEARCH TICKER"
+                className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
+                onChange={(e) => setTickerSearch(e.target.value.toUpperCase())}
+                onFocus={() => setShowSuggestions(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setTickerSearch('');
+                    setShowSuggestions(false);
+                  }
+                }}
+              />
+              {tickerSearch && (
+                <button
+                  onClick={() => { setTickerSearch(''); setShowSuggestions(false); }}
+                  className="text-zinc-500 hover:text-zinc-300 shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full mt-1 left-0 w-full bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-10 overflow-hidden">
+                {suggestions.map((ticker) => (
+                  <button
+                    key={ticker}
+                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
+                    onClick={() => {
+                      setTickerSearch(ticker);
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    <TickerLogo ticker={ticker} />
+                    <span className="text-sm font-bold text-white">{ticker}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={onExport}
             disabled={transactions.length === 0}
