@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard, Search, X } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
 import { cn } from '../../lib/utils';
 import TickerLogo from '../shared/TickerLogo';
@@ -38,14 +38,33 @@ export default function TransactionsTab({
 }: Props) {
   const isHidden = usePrivacy();
   const [filter, setFilter] = useState<Filter>('all');
+  const [tickerSearch, setTickerSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const filtered = [...transactions]
-    .filter((tx) => {
-      if (filter === 'buy')  return tx.type === 'buy';
-      if (filter === 'sell') return tx.type === 'sell';
-      if (filter === 'cash') return tx.type === 'deposit' || tx.type === 'withdrawal';
-      return true;
-    })
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, []);
+
+  const typeFiltered = [...transactions].filter((tx) => {
+    if (filter === 'buy')  return tx.type === 'buy';
+    if (filter === 'sell') return tx.type === 'sell';
+    if (filter === 'cash') return tx.type === 'deposit' || tx.type === 'withdrawal';
+    return true;
+  });
+
+  const suggestions = [...new Set(typeFiltered.map((tx) => tx.ticker))]
+    .filter((t) => !tickerSearch || t.startsWith(tickerSearch))
+    .sort();
+
+  const filtered = typeFiltered
+    .filter((tx) => !tickerSearch || tx.ticker.startsWith(tickerSearch))
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
@@ -74,6 +93,52 @@ export default function TransactionsTab({
                 {label}
               </button>
             ))}
+          </div>
+
+          {/* Ticker search */}
+          <div ref={wrapperRef} className="relative">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg w-40">
+              <Search className="w-3 h-3 text-zinc-500 shrink-0" />
+              <input
+                type="text"
+                value={tickerSearch}
+                placeholder="SEARCH TICKER"
+                className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-zinc-300 placeholder:text-zinc-600 outline-none w-full"
+                onChange={(e) => setTickerSearch(e.target.value.toUpperCase())}
+                onFocus={() => setShowSuggestions(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setTickerSearch('');
+                    setShowSuggestions(false);
+                  }
+                }}
+              />
+              {tickerSearch && (
+                <button
+                  onClick={() => { setTickerSearch(''); setShowSuggestions(false); }}
+                  className="text-zinc-500 hover:text-zinc-300 shrink-0"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full mt-1 left-0 w-full bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-10 overflow-hidden">
+                {suggestions.map((ticker) => (
+                  <button
+                    key={ticker}
+                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
+                    onClick={() => {
+                      setTickerSearch(ticker);
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    <TickerLogo ticker={ticker} />
+                    <span className="text-sm font-bold text-white">{ticker}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <button
