@@ -66,8 +66,35 @@ function fmtDateLabel(dateStr: string): string {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function fmtXTick(dateStr: string): string {
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+function XTick({ x = 0, y = 0, payload, range }: { x?: number | string; y?: number | string; payload?: { value: string }; range: Range }) {
+  if (!payload) return null;
+  const date = new Date(payload.value + 'T00:00:00');
+  const longRange = range !== '1W' && range !== '1M';
+  const isNewYear = longRange && date.getMonth() === 0;
+  const label = isNewYear
+    ? date.getFullYear().toString()
+    : date.toLocaleDateString(undefined, longRange ? { month: 'short' } : { month: 'short', day: 'numeric' });
+  return (
+    <text x={x} y={Number(y) + 12} textAnchor="middle" fontSize={10} fontWeight={isNewYear ? 800 : 600} fill={isNewYear ? '#a1a1aa' : '#71717a'}>
+      {label}
+    </text>
+  );
+}
+
+function getTicks(data: ChartDataPoint[], range: Range): string[] {
+  if (data.length === 0) return [];
+  if (range === '1W') return data.map((d) => d.date);
+  if (range === '1M') return data.filter((_, i) => i % 5 === 0).map((d) => d.date);
+  // 3M / 1Y: first trading day of each month; 5Y: first of each quarter (Jan/Apr/Jul/Oct)
+  const seen = new Set<string>();
+  return data.filter((d) => {
+    const month = new Date(d.date + 'T00:00:00').getMonth();
+    if (range === '5Y' && month % 3 !== 0) return false;
+    const key = d.date.slice(0, 7);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).map((d) => d.date);
 }
 
 interface TooltipProps {
@@ -122,9 +149,9 @@ interface Props {
 }
 
 export default function StockPriceChart({ ticker }: Props) {
-  const [range, setRange]                   = useState<Range>('1M');
+  const [range, setRange]                   = useState<Range>('1Y');
   const [chartInterval, setChartInterval]   = useState<Interval>('1d');
-  const [activeMA, setActiveMA] = useState<Record<string, boolean>>({ ma21: false, ma50: false, ma200: false });
+  const [activeMA, setActiveMA] = useState<Record<string, boolean>>({ ma21: true, ma50: true, ma200: true });
   const [data,    setData]                  = useState<ChartDataPoint[]>([]);
   const [loading, setLoading]               = useState(true);
   const [error,   setError]                 = useState<string | null>(null);
@@ -244,8 +271,8 @@ export default function StockPriceChart({ ticker }: Props) {
                   dataKey="date"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fontWeight: 700, fill: '#71717a' }}
-                  tickFormatter={fmtXTick}
+                  ticks={getTicks(data, range)}
+                  tick={(props) => <XTick {...props} range={range} />}
                 />
                 <YAxis
                   axisLine={false}
