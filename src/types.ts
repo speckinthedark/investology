@@ -62,7 +62,6 @@ export interface StockDetail {
   ticker: string;
   companyName: string;
   exchange: string;          // human-readable, e.g. "NASDAQ"
-  tvSymbol: string;          // TradingView format, e.g. "NASDAQ:AAPL"
   sector: string;
   industry: string;
   country: string;
@@ -151,6 +150,25 @@ export interface ScreenerQuote {
   averageDailyVolume3Month: number | null;
   trailingPE: number | null;
   fiftyTwoWeekChangePercent: number | null;
+}
+
+export interface ChartQuote {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+}
+
+export interface StockChartData {
+  quotes: ChartQuote[];
+  rangeStart: string;
+  meta: {
+    currency: string;
+    regularMarketPrice: number;
+    chartPreviousClose: number;
+  };
 }
 
 export type InsightsDirection = 'Bearish' | 'Bullish' | 'Neutral';

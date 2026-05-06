@@ -29,6 +29,14 @@ const EXCHANGE_MAP: Record<string, string> = {
   PCX: 'AMEX', ASE: 'AMEX',
 };
 
+const CHART_RANGE_DAYS: Record<string, number> = {
+  '1W': 10,
+  '1M': 35,
+  '3M': 100,
+  '1Y': 370,
+  '5Y': 1830,
+};
+
 function shapeOutlook(o: any): {
   stateDescription: string; direction: string; score: number; scoreDescription: string;
   sectorDirection: string | null; sectorScore: number | null; sectorScoreDescription: string | null;
@@ -127,13 +135,11 @@ async function startServer() {
 
       const rawExchange = (quote as any).exchange ?? '';
       const exchange = EXCHANGE_MAP[rawExchange] ?? (quote as any).fullExchangeName ?? rawExchange;
-      const tvSymbol = exchange ? `${exchange}:${ticker}` : ticker;
 
       res.json({
         ticker,
         companyName: (quote as any).longName ?? (quote as any).shortName ?? ticker,
         exchange,
-        tvSymbol,
         sector:              profile.sector ?? '',
         industry:            profile.industry ?? '',
         country:             profile.country ?? '',
@@ -261,6 +267,46 @@ async function startServer() {
     } catch (e) {
       console.error('Insights error:', e);
       res.status(500).json({ error: 'Failed to fetch insights' });
+    }
+  });
+
+  // --- OHLCV chart data for StockPriceChart ---
+  app.get('/api/stock/chart/:ticker', async (req, res) => {
+    const ticker = (req.params.ticker as string).toUpperCase();
+    const range = (req.query.range as string) || '1M';
+    const interval = (req.query.interval as string) || '1d';
+    const days = CHART_RANGE_DAYS[range] ?? 35;
+    // Fetch 300 extra calendar days (~214 trading days, comfortably above 200)
+    // so the client has enough warmup data to compute MA200 on all visible dates
+    // even on short-range views like 1W/1M/3M.
+    const from = new Date(Date.now() - (days + 300) * 86400000);
+    const rangeStart = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+
+    try {
+      const chartData = await (yahooFinance as any).chart(ticker, { period1: from, interval });
+      const quotes = (chartData?.quotes ?? [])
+        .filter((q: any) => q.close != null)
+        .map((q: any) => ({
+          date: new Date(q.date).toISOString().split('T')[0],
+          open: q.open ?? null,
+          high: q.high ?? null,
+          low: q.low ?? null,
+          close: parseFloat((q.close as number).toFixed(2)),
+          volume: q.volume ?? null,
+        }));
+
+      res.json({
+        quotes,
+        rangeStart,
+        meta: {
+          currency: chartData?.meta?.currency ?? 'USD',
+          regularMarketPrice: chartData?.meta?.regularMarketPrice ?? 0,
+          chartPreviousClose: chartData?.meta?.chartPreviousClose ?? 0,
+        },
+      });
+    } catch (e) {
+      console.error('Chart error:', e);
+      res.status(500).json({ error: 'Failed to fetch chart data' });
     }
   });
 
