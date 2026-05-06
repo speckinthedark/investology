@@ -56,7 +56,10 @@ function fmtPrice(v: number): string {
 }
 
 function fmtAxis(v: number): string {
-  return `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}`;
+  if (v >= 1000) return `$${(v / 1000).toFixed(0)}k`;
+  if (v >= 10)   return `$${v.toFixed(0)}`;
+  if (v >= 1)    return `$${v.toFixed(2)}`;
+  return `$${v.toFixed(4)}`;
 }
 
 function fmtDateLabel(dateStr: string): string {
@@ -121,9 +124,7 @@ interface Props {
 export default function StockPriceChart({ ticker }: Props) {
   const [range, setRange]                   = useState<Range>('1M');
   const [chartInterval, setChartInterval]   = useState<Interval>('1d');
-  const [showMA21,  setShowMA21]            = useState(false);
-  const [showMA50,  setShowMA50]            = useState(false);
-  const [showMA200, setShowMA200]           = useState(false);
+  const [activeMA, setActiveMA] = useState<Record<string, boolean>>({ ma21: false, ma50: false, ma200: false });
   const [data,    setData]                  = useState<ChartDataPoint[]>([]);
   const [loading, setLoading]               = useState(true);
   const [error,   setError]                 = useState<string | null>(null);
@@ -194,10 +195,10 @@ export default function StockPriceChart({ ticker }: Props) {
         {/* MA toggles */}
         <div className="flex items-center gap-4">
           {MA_DEFS.map(({ key, label, color }) => {
-            const active = key === 'ma21' ? showMA21 : key === 'ma50' ? showMA50 : showMA200;
-            const toggle = key === 'ma21' ? setShowMA21 : key === 'ma50' ? setShowMA50 : setShowMA200;
+            const active = activeMA[key] ?? false;
+            const toggle = () => setActiveMA((prev) => ({ ...prev, [key]: !prev[key] }));
             return (
-              <button key={key} onClick={() => toggle(!active)} className="flex items-center gap-1.5 select-none">
+              <button key={key} onClick={toggle} className="flex items-center gap-1.5 select-none">
                 <div
                   className="w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 transition-all"
                   style={active
@@ -232,7 +233,7 @@ export default function StockPriceChart({ ticker }: Props) {
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 4 }} syncId="stock-chart">
                 <defs>
-                  <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="stockPriceGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%"  stopColor="#a78bfa" stopOpacity={0.22} />
                     <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
                   </linearGradient>
@@ -255,7 +256,7 @@ export default function StockPriceChart({ ticker }: Props) {
                 />
                 <Tooltip
                   content={
-                    <TooltipContent showMA21={showMA21} showMA50={showMA50} showMA200={showMA200} />
+                    <TooltipContent showMA21={activeMA.ma21} showMA50={activeMA.ma50} showMA200={activeMA.ma200} />
                   }
                   cursor={{ stroke: '#52525b', strokeWidth: 1 }}
                 />
@@ -264,19 +265,19 @@ export default function StockPriceChart({ ticker }: Props) {
                   dataKey="close"
                   stroke="#a78bfa"
                   strokeWidth={2}
-                  fill="url(#priceGrad)"
+                  fill="url(#stockPriceGrad)"
                   dot={false}
                   activeDot={{ r: 4, fill: '#a78bfa', stroke: '#09090b', strokeWidth: 2 }}
                 />
-                {showMA21 && (
+                {activeMA.ma21 && (
                   <Line type="monotone" dataKey="ma21" stroke="#f59e0b" strokeWidth={1.5}
                     dot={false} activeDot={false} strokeDasharray="5 3" connectNulls={false} />
                 )}
-                {showMA50 && (
+                {activeMA.ma50 && (
                   <Line type="monotone" dataKey="ma50" stroke="#22d3ee" strokeWidth={1.5}
                     dot={false} activeDot={false} strokeDasharray="5 3" connectNulls={false} />
                 )}
-                {showMA200 && (
+                {activeMA.ma200 && (
                   <Line type="monotone" dataKey="ma200" stroke="#f87171" strokeWidth={1.5}
                     dot={false} activeDot={false} strokeDasharray="5 3" connectNulls={false} />
                 )}
