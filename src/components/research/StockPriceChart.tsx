@@ -63,11 +63,11 @@ function fmtAxis(v: number): string {
 }
 
 function fmtDateLabel(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function fmtXTick(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 interface TooltipProps {
