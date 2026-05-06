@@ -5,7 +5,7 @@ import { fetchStockDetail, fetchStockInsights } from '../../services/stockServic
 import StockSearchBar from '../research/StockSearchBar';
 import StockHero from '../research/StockHero';
 import PortfolioCallout from '../research/PortfolioCallout';
-import TradingViewChart from '../research/TradingViewChart';
+import StockPriceChart from '../research/StockPriceChart';
 import StockStatsTable from '../research/StockStatsTable';
 import FinancialsChart from '../research/FinancialsChart';
 import InsightsStrip from '../research/InsightsStrip';
@@ -132,7 +132,7 @@ export default function ResearchTab({ holdings, initialTicker, onInitialTickerCo
               </div>
               <div className="flex flex-col gap-4 lg:h-full lg:overflow-y-auto custom-scrollbar">
                 <div className="flex flex-col gap-4 min-h-[600px] lg:min-h-full">
-                  <TradingViewChart tvSymbol={detail.tvSymbol} />
+                  <StockPriceChart ticker={detail.ticker} />
                   <FinancialsChart detail={detail} />
                 </div>
                 {insights && <BullBearPanel insights={insights} />}

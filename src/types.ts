@@ -62,7 +62,6 @@ export interface StockDetail {
   ticker: string;
   companyName: string;
   exchange: string;          // human-readable, e.g. "NASDAQ"
-  tvSymbol: string;          // TradingView format, e.g. "NASDAQ:AAPL"
   sector: string;
   industry: string;
   country: string;

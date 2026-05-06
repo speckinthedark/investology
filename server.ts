@@ -135,13 +135,11 @@ async function startServer() {
 
       const rawExchange = (quote as any).exchange ?? '';
       const exchange = EXCHANGE_MAP[rawExchange] ?? (quote as any).fullExchangeName ?? rawExchange;
-      const tvSymbol = exchange ? `${exchange}:${ticker}` : ticker;
 
       res.json({
         ticker,
         companyName: (quote as any).longName ?? (quote as any).shortName ?? ticker,
         exchange,
-        tvSymbol,
         sector:              profile.sector ?? '',
         industry:            profile.industry ?? '',
         country:             profile.country ?? '',
