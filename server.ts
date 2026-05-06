@@ -276,7 +276,10 @@ async function startServer() {
     const range = (req.query.range as string) || '1M';
     const interval = (req.query.interval as string) || '1d';
     const days = CHART_RANGE_DAYS[range] ?? 35;
-    const from = new Date(Date.now() - days * 86400000);
+    // Fetch 280 extra calendar days (~200 trading days) so the client has enough
+    // warmup data to compute MA200 even on short-range views like 1W/1M/3M.
+    const from = new Date(Date.now() - (days + 280) * 86400000);
+    const rangeStart = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
 
     try {
       const chartData = await (yahooFinance as any).chart(ticker, { period1: from, interval });
@@ -293,6 +296,7 @@ async function startServer() {
 
       res.json({
         quotes,
+        rangeStart,
         meta: {
           currency: chartData?.meta?.currency ?? 'USD',
           regularMarketPrice: chartData?.meta?.regularMarketPrice ?? 0,

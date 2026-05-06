@@ -140,7 +140,8 @@ export default function StockPriceChart({ ticker }: Props) {
         const ma21   = computeMA(closes, 21);
         const ma50   = computeMA(closes, 50);
         const ma200  = computeMA(closes, 200);
-        setData(result.quotes.map((q, i) => ({ ...q, ma21: ma21[i], ma50: ma50[i], ma200: ma200[i] })));
+        const all = result.quotes.map((q, i) => ({ ...q, ma21: ma21[i], ma50: ma50[i], ma200: ma200[i] }));
+        setData(all.filter((d) => d.date >= result.rangeStart));
         setLoading(false);
       })
       .catch((e: unknown) => {

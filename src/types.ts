@@ -163,6 +163,7 @@ export interface ChartQuote {
 
 export interface StockChartData {
   quotes: ChartQuote[];
+  rangeStart: string;
   meta: {
     currency: string;
     regularMarketPrice: number;
