@@ -264,6 +264,49 @@ async function startServer() {
     }
   });
 
+  // --- OHLCV chart data for StockPriceChart ---
+  const CHART_RANGE_DAYS: Record<string, number> = {
+    '1W': 10,
+    '1M': 35,
+    '3M': 100,
+    '1Y': 370,
+    '5Y': 1830,
+  };
+
+  app.get('/api/stock/chart/:ticker', async (req, res) => {
+    const ticker = (req.params.ticker as string).toUpperCase();
+    const range = (req.query.range as string) || '1M';
+    const interval = (req.query.interval as string) || '1d';
+    const days = CHART_RANGE_DAYS[range] ?? 35;
+    const from = new Date(Date.now() - days * 86400000);
+
+    try {
+      const chartData = await (yahooFinance as any).chart(ticker, { period1: from, interval });
+      const quotes = (chartData?.quotes ?? [])
+        .filter((q: any) => q.close != null)
+        .map((q: any) => ({
+          date: new Date(q.date).toISOString().split('T')[0],
+          open: q.open ?? null,
+          high: q.high ?? null,
+          low: q.low ?? null,
+          close: parseFloat((q.close as number).toFixed(2)),
+          volume: q.volume ?? null,
+        }));
+
+      res.json({
+        quotes,
+        meta: {
+          currency: chartData?.meta?.currency ?? 'USD',
+          regularMarketPrice: chartData?.meta?.regularMarketPrice ?? 0,
+          chartPreviousClose: chartData?.meta?.chartPreviousClose ?? 0,
+        },
+      });
+    } catch (e) {
+      console.error('Chart error:', e);
+      res.status(500).json({ error: 'Failed to fetch chart data' });
+    }
+  });
+
   // NOTE: This catch-all must remain BELOW all /api/stock/[specific]/:ticker routes
   // (e.g. /api/stock/detail/:ticker, /api/stock/insights/:ticker). Express matches
   // routes in registration order; moving this above them would silently swallow requests.
