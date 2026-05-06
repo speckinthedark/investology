@@ -130,12 +130,18 @@ export default function ResearchTab({ holdings, initialTicker, onInitialTickerCo
               <div className="lg:overflow-y-auto custom-scrollbar">
                 <StockStatsTable detail={detail} insights={insights} />
               </div>
-              <div className="flex flex-col gap-4 lg:h-full lg:overflow-y-auto custom-scrollbar">
-                <div className="flex flex-col gap-4 min-h-[600px] lg:min-h-full">
+              <div className="flex flex-col gap-4 lg:gap-0 lg:h-full lg:overflow-y-auto custom-scrollbar lg:[scroll-snap-type:y_mandatory]">
+                <div className="flex flex-col min-h-[500px] lg:min-h-0 lg:h-full lg:shrink-0 lg:[scroll-snap-align:start] lg:[scroll-snap-stop:always]">
                   <StockPriceChart ticker={detail.ticker} />
+                </div>
+                <div className="flex flex-col min-h-[500px] lg:min-h-0 lg:h-full lg:shrink-0 lg:[scroll-snap-align:start] lg:[scroll-snap-stop:always]">
                   <FinancialsChart detail={detail} />
                 </div>
-                {insights && <BullBearPanel insights={insights} />}
+                {insights && (
+                  <div className="flex flex-col min-h-[300px] lg:min-h-0 lg:h-full lg:shrink-0 lg:[scroll-snap-align:start] lg:[scroll-snap-stop:always]">
+                    <BullBearPanel insights={insights} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
