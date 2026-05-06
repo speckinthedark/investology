@@ -29,6 +29,14 @@ const EXCHANGE_MAP: Record<string, string> = {
   PCX: 'AMEX', ASE: 'AMEX',
 };
 
+const CHART_RANGE_DAYS: Record<string, number> = {
+  '1W': 10,
+  '1M': 35,
+  '3M': 100,
+  '1Y': 370,
+  '5Y': 1830,
+};
+
 function shapeOutlook(o: any): {
   stateDescription: string; direction: string; score: number; scoreDescription: string;
   sectorDirection: string | null; sectorScore: number | null; sectorScoreDescription: string | null;
@@ -265,14 +273,6 @@ async function startServer() {
   });
 
   // --- OHLCV chart data for StockPriceChart ---
-  const CHART_RANGE_DAYS: Record<string, number> = {
-    '1W': 10,
-    '1M': 35,
-    '3M': 100,
-    '1Y': 370,
-    '5Y': 1830,
-  };
-
   app.get('/api/stock/chart/:ticker', async (req, res) => {
     const ticker = (req.params.ticker as string).toUpperCase();
     const range = (req.query.range as string) || '1M';
