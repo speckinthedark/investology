@@ -153,6 +153,24 @@ export interface ScreenerQuote {
   fiftyTwoWeekChangePercent: number | null;
 }
 
+export interface ChartQuote {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+}
+
+export interface StockChartData {
+  quotes: ChartQuote[];
+  meta: {
+    currency: string;
+    regularMarketPrice: number;
+    chartPreviousClose: number;
+  };
+}
+
 export type InsightsDirection = 'Bearish' | 'Bullish' | 'Neutral';
 
 export interface InsightsOutlook {

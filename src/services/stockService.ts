@@ -1,4 +1,4 @@
-import { StockData, PriceHistory, StockDetail, StockInsights, ScreenerQuote } from '../types';
+import { StockData, PriceHistory, StockDetail, StockInsights, ScreenerQuote, StockChartData } from '../types';
 
 export async function fetchStockData(ticker: string): Promise<StockData> {
   try {
@@ -98,4 +98,12 @@ export async function fetchScreener(screenerId: string): Promise<ScreenerQuote[]
   if (!res.ok) throw new Error('Failed to fetch screener');
   const data = await res.json();
   return data.quotes ?? [];
+}
+
+export async function fetchStockChart(ticker: string, range: string, interval: string): Promise<StockChartData> {
+  const res = await fetch(
+    `/api/stock/chart/${encodeURIComponent(ticker.toUpperCase())}?range=${range}&interval=${interval}`
+  );
+  if (!res.ok) throw new Error('Failed to fetch chart data');
+  return res.json();
 }
