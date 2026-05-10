@@ -82,6 +82,7 @@ export default function App() {
     if (!lastSync || lastSync < oneHourAgo) {
       snaptrade.sync(bulkImportTransactions);
     }
+  // snaptrade.sync is a new reference every render; adding it would loop
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snaptrade.credentials]);
 
@@ -326,7 +327,6 @@ export default function App() {
                     onDelete={handleDeleteTransaction}
                     onAddTrade={() => openModal('buy')}
                     onAddCash={() => openModal('deposit')}
-                    onImport={() => setShowImportGuide(true)}
                     onExport={handleExport}
                     onClearAll={handleClearAll}
                   />
