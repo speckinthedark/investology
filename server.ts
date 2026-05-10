@@ -662,6 +662,53 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     }
   });
 
+  app.post('/api/snaptrade/accounts', async (req, res) => {
+    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
+    const { snaptradeUserId, userSecret } = req.body as { snaptradeUserId: string; userSecret: string };
+    if (!snaptradeUserId || !userSecret) {
+      return res.status(400).json({ error: 'snaptradeUserId and userSecret required' });
+    }
+    try {
+      const response = await snaptrade.accountInformation.listUserAccounts({
+        userId: snaptradeUserId,
+        userSecret,
+      });
+      const raw = response.data as { id: string; name: string; institution_name: string }[];
+      const accounts = raw.map((a) => ({
+        id: a.id,
+        name: a.name ?? a.institution_name ?? 'Account',
+        brokerage: a.institution_name ?? 'Unknown',
+      }));
+      res.json({ accounts });
+    } catch (e) {
+      console.error('SnapTrade accounts error:', e);
+      res.status(500).json({ error: 'Failed to fetch accounts' });
+    }
+  });
+
+  app.delete('/api/snaptrade/disconnect', async (req, res) => {
+    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
+    const { snaptradeUserId, userSecret, accountId } = req.body as {
+      snaptradeUserId: string;
+      userSecret: string;
+      accountId: string;
+    };
+    if (!snaptradeUserId || !userSecret || !accountId) {
+      return res.status(400).json({ error: 'snaptradeUserId, userSecret, accountId required' });
+    }
+    try {
+      await snaptrade.connections.removeBrokerageAuthorization({
+        authorizationId: accountId,
+        userId: snaptradeUserId,
+        userSecret,
+      });
+      res.json({ ok: true });
+    } catch (e) {
+      console.error('SnapTrade disconnect error:', e);
+      res.status(500).json({ error: 'Failed to disconnect' });
+    }
+  });
+
   // --- eToro XLSX import ---
   app.post('/api/import/etoro', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
