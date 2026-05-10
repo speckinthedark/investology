@@ -709,6 +709,55 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     }
   });
 
+  app.post('/api/snaptrade/sync', async (req, res) => {
+    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
+    const { snaptradeUserId, userSecret } = req.body as { snaptradeUserId: string; userSecret: string };
+    if (!snaptradeUserId || !userSecret) {
+      return res.status(400).json({ error: 'snaptradeUserId and userSecret required' });
+    }
+    try {
+      const response = await snaptrade.transactionsAndReporting.getActivities({
+        userId: snaptradeUserId,
+        userSecret,
+        startDate: '2010-01-01',
+        endDate: new Date().toISOString().split('T')[0],
+      });
+
+      type RawActivity = {
+        type?: string;
+        symbol?: { symbol?: { symbol?: string } };
+        units?: number | null;
+        price?: number | null;
+        trade_date?: string | null;
+      };
+
+      const raw = response.data as RawActivity[];
+
+      const transactions = raw
+        .filter((a) => {
+          if (a.type !== 'BUY' && a.type !== 'SELL') return false;
+          if (!a.symbol?.symbol?.symbol) return false;
+          if (!a.units || a.units === 0) return false;
+          if (a.price == null) return false;
+          if (!a.trade_date) return false;
+          return true;
+        })
+        .map((a) => ({
+          ticker: a.symbol!.symbol!.symbol!.toUpperCase(),
+          type: a.type === 'BUY' ? 'buy' : 'sell' as 'buy' | 'sell',
+          shares: Math.abs(a.units!),
+          price: a.price!,
+          timestamp: new Date(a.trade_date!).toISOString(),
+        }))
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      res.json({ transactions });
+    } catch (e) {
+      console.error('SnapTrade sync error:', e);
+      res.status(500).json({ error: 'Sync failed' });
+    }
+  });
+
   // --- eToro XLSX import ---
   app.post('/api/import/etoro', upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
