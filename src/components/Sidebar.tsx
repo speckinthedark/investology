@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw, Search } from 'lucide-react';
+import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw, Search, Link } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { cn } from '../lib/utils';
 
-type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
+export type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research' | 'connections';
+
+type DotStatus = 'connected' | 'error' | 'disconnected';
 
 const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview',     label: 'Overview',     icon: LayoutDashboard },
   { id: 'transactions', label: 'Transactions', icon: ArrowUpDown },
   { id: 'performance',  label: 'Performance',  icon: TrendingUp },
   { id: 'research',     label: 'Research',     icon: Search },
+  { id: 'connections',  label: 'Connections',  icon: Link },
 ];
 
 interface Props {
@@ -19,9 +22,10 @@ interface Props {
   user: User;
   isRefreshing: boolean;
   onRefresh: () => void;
+  connectionStatus: DotStatus;
 }
 
-export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefreshing, onRefresh }: Props) {
+export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefreshing, onRefresh, connectionStatus }: Props) {
   const [pinned, setPinned] = useState(false);
 
   const initials = (user.email ?? user.displayName ?? '?')
@@ -42,6 +46,11 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
     'text-[11px] font-bold uppercase tracking-widest whitespace-nowrap transition-opacity duration-150',
     pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
   );
+
+  const dotColorClass =
+    connectionStatus === 'connected' ? 'bg-emerald-500' :
+    connectionStatus === 'error'     ? 'bg-amber-500' :
+                                       'bg-zinc-600';
 
   return (
     <div
@@ -75,6 +84,7 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
       <nav className="flex-1 py-3 flex flex-col gap-1">
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
           const isActive = activeTab === id;
+          const isConnections = id === 'connections';
           return (
             <button
               key={id}
@@ -87,7 +97,12 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
                   : 'text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300',
               )}
             >
-              <Icon className="w-5 h-5 shrink-0" />
+              <div className="relative shrink-0">
+                <Icon className="w-5 h-5" />
+                {isConnections && (
+                  <span className={cn('absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-zinc-900', dotColorClass)} />
+                )}
+              </div>
               <span className={labelClass}>{label}</span>
             </button>
           );
