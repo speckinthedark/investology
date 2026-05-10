@@ -8,6 +8,7 @@ import YahooFinance from 'yahoo-finance2';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { XMLParser } from 'fast-xml-parser';
+import { Snaptrade } from 'snaptrade-typescript-sdk';
 const yahooFinance = new YahooFinance();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
@@ -21,6 +22,13 @@ const __dirname = path.dirname(__filename);
 
 const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  : null;
+
+const snaptrade = process.env.SNAPTRADE_CLIENT_ID && process.env.SNAPTRADE_CONSUMER_KEY
+  ? new Snaptrade({
+      clientId: process.env.SNAPTRADE_CLIENT_ID,
+      consumerKey: process.env.SNAPTRADE_CONSUMER_KEY,
+    })
   : null;
 
 const EXCHANGE_MAP: Record<string, string> = {
@@ -609,6 +617,48 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     } catch (e) {
       console.error('Screener error:', e);
       res.status(500).json({ error: 'Failed to fetch screener data' });
+    }
+  });
+
+  // --- SnapTrade routes ---
+  app.post('/api/snaptrade/register', async (req, res) => {
+    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
+    const { firebaseUid } = req.body as { firebaseUid: string };
+    if (!firebaseUid) return res.status(400).json({ error: 'firebaseUid required' });
+    try {
+      const response = await snaptrade.authentication.registerSnapTradeUser({
+        userId: firebaseUid,
+      });
+      const { userId: snaptradeUserId, userSecret } = response.data as { userId: string; userSecret: string };
+      res.json({ snaptradeUserId, userSecret });
+    } catch (e: unknown) {
+      console.error('SnapTrade register error:', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Registration failed' });
+    }
+  });
+
+  app.post('/api/snaptrade/connect-url', async (req, res) => {
+    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
+    const { snaptradeUserId, userSecret, redirectUri } = req.body as {
+      snaptradeUserId: string;
+      userSecret: string;
+      redirectUri: string;
+    };
+    if (!snaptradeUserId || !userSecret || !redirectUri) {
+      return res.status(400).json({ error: 'snaptradeUserId, userSecret, redirectUri required' });
+    }
+    try {
+      const response = await snaptrade.authentication.loginSnapTradeUser({
+        userId: snaptradeUserId,
+        userSecret,
+        customRedirect: redirectUri,
+        immediateRedirect: true,
+      });
+      const { redirectURI } = response.data as { redirectURI: string };
+      res.json({ redirectUri: redirectURI });
+    } catch (e: unknown) {
+      console.error('SnapTrade connect-url error:', e);
+      res.status(500).json({ error: e instanceof Error ? e.message : 'Failed to generate connect URL' });
     }
   });
 
