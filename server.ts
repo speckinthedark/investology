@@ -631,22 +631,22 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
       });
       const { userId: snaptradeUserId, userSecret } = response.data as { userId: string; userSecret: string };
       res.json({ snaptradeUserId, userSecret });
-    } catch (e: unknown) {
+    } catch (e) {
       console.error('SnapTrade register error:', e);
-      res.status(500).json({ error: e instanceof Error ? e.message : 'Registration failed' });
+      res.status(500).json({ error: 'Registration failed' });
     }
   });
 
   app.post('/api/snaptrade/connect-url', async (req, res) => {
     if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { snaptradeUserId, userSecret, redirectUri } = req.body as {
+    const { snaptradeUserId, userSecret } = req.body as {
       snaptradeUserId: string;
       userSecret: string;
-      redirectUri: string;
     };
-    if (!snaptradeUserId || !userSecret || !redirectUri) {
-      return res.status(400).json({ error: 'snaptradeUserId, userSecret, redirectUri required' });
+    if (!snaptradeUserId || !userSecret) {
+      return res.status(400).json({ error: 'snaptradeUserId and userSecret required' });
     }
+    const redirectUri = `${req.headers.origin ?? ''}?snaptrade_auth=success`;
     try {
       const response = await snaptrade.authentication.loginSnapTradeUser({
         userId: snaptradeUserId,
@@ -656,9 +656,9 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
       });
       const { redirectURI } = response.data as { redirectURI: string };
       res.json({ redirectUri: redirectURI });
-    } catch (e: unknown) {
+    } catch (e) {
       console.error('SnapTrade connect-url error:', e);
-      res.status(500).json({ error: e instanceof Error ? e.message : 'Failed to generate connect URL' });
+      res.status(500).json({ error: 'Failed to generate connect URL' });
     }
   });
 
