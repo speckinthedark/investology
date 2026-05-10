@@ -220,6 +220,7 @@ export interface SnaptradeAccount {
   id: string;
   name: string;
   brokerage: string;
+  authorizationId: string;
 }
 
 export interface SnaptradeSettings {

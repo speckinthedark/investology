@@ -75,6 +75,17 @@ export default function App() {
   useEffect(() => { fetchSP500YTD().then(setSP500YTD); }, []);
   useEffect(() => { fetchFXRates().then(setFxRates); }, []);
 
+  // Detect OAuth redirect back from SnapTrade portal regardless of active tab
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('snaptrade_auth') === 'success') {
+      history.replaceState(null, '', window.location.pathname);
+      setActiveTab('connections');
+      snaptrade.refreshAccounts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!snaptrade.credentials) return;
     const lastSync = snaptrade.lastSyncedAt ? new Date(snaptrade.lastSyncedAt) : null;
@@ -385,7 +396,6 @@ export default function App() {
                     syncError={snaptrade.syncError}
                     onRegister={snaptrade.register}
                     onGetConnectUrl={snaptrade.getConnectUrl}
-                    onRefreshAccounts={snaptrade.refreshAccounts}
                     onSync={() => snaptrade.sync(bulkImportTransactions)}
                     onDisconnect={snaptrade.disconnect}
                     onShowCsvImport={() => setShowImportGuide(true)}

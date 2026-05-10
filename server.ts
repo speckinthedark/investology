@@ -673,11 +673,12 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
         userId: snaptradeUserId,
         userSecret,
       });
-      const raw = response.data as { id: string; name: string; institution_name: string }[];
+      const raw = response.data as { id: string; name: string; institution_name: string; brokerage_authorization?: string }[];
       const accounts = raw.map((a) => ({
         id: a.id,
         name: a.name ?? a.institution_name ?? 'Account',
         brokerage: a.institution_name ?? 'Unknown',
+        authorizationId: a.brokerage_authorization ?? '',
       }));
       res.json({ accounts });
     } catch (e) {
@@ -688,17 +689,17 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
 
   app.delete('/api/snaptrade/disconnect', async (req, res) => {
     if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { snaptradeUserId, userSecret, accountId } = req.body as {
+    const { snaptradeUserId, userSecret, authorizationId } = req.body as {
       snaptradeUserId: string;
       userSecret: string;
-      accountId: string;
+      authorizationId: string;
     };
-    if (!snaptradeUserId || !userSecret || !accountId) {
-      return res.status(400).json({ error: 'snaptradeUserId, userSecret, accountId required' });
+    if (!snaptradeUserId || !userSecret || !authorizationId) {
+      return res.status(400).json({ error: 'snaptradeUserId, userSecret, authorizationId required' });
     }
     try {
       await snaptrade.connections.removeBrokerageAuthorization({
-        authorizationId: accountId,
+        authorizationId,
         userId: snaptradeUserId,
         userSecret,
       });

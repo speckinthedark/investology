@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Loader2, Link, Unplug, RefreshCw, Plus } from 'lucide-react';
 import { SnaptradeAccount } from '../../types';
 import { cn } from '../../lib/utils';
@@ -11,7 +11,6 @@ interface Props {
   syncError: boolean;
   onRegister: () => Promise<void>;
   onGetConnectUrl: () => Promise<string>;
-  onRefreshAccounts: () => Promise<void>;
   onSync: () => Promise<void>;
   onDisconnect: (accountId: string) => Promise<void>;
   onShowCsvImport: () => void;
@@ -25,20 +24,10 @@ function fmtDatetime(iso: string): string {
 
 export default function ConnectionsTab({
   credentials, accounts, lastSyncedAt, isSyncing, syncError,
-  onRegister, onGetConnectUrl, onRefreshAccounts, onSync, onDisconnect, onShowCsvImport,
+  onRegister, onGetConnectUrl, onSync, onDisconnect, onShowCsvImport,
 }: Props) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
-
-  // Detect redirect back from SnapTrade portal
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('snaptrade_auth') === 'success') {
-      history.replaceState(null, '', window.location.pathname);
-      onRefreshAccounts();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleConnect = async () => {
     setIsConnecting(true);

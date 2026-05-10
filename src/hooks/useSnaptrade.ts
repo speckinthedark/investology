@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { User } from 'firebase/auth';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -22,9 +22,11 @@ export function useSnaptrade(user: User | null) {
     return unsub;
   }, [user]);
 
-  const credentials = settings
-    ? { snaptradeUserId: settings.snaptradeUserId, userSecret: settings.userSecret }
-    : null;
+  const credentials = useMemo(
+    () => settings ? { snaptradeUserId: settings.snaptradeUserId, userSecret: settings.userSecret } : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [settings?.snaptradeUserId, settings?.userSecret],
+  );
 
   const register = async () => {
     if (!user) return;
@@ -113,11 +115,12 @@ export function useSnaptrade(user: User | null) {
 
   const disconnect = async (accountId: string) => {
     if (!user || !credentials) return;
+    const authorizationId = (settings?.accounts ?? []).find((a) => a.id === accountId)?.authorizationId ?? '';
     try {
       const res = await fetch('/api/snaptrade/disconnect', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...credentials, accountId }),
+        body: JSON.stringify({ ...credentials, authorizationId }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       await setDoc(
