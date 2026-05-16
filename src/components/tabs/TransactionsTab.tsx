@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Pencil, Trash2, FolderUp, Download, ArrowUpDown, CreditCard, Search, X } from 'lucide-react';
+import { Pencil, Trash2, Download, ArrowUpDown, CreditCard, Search, X } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
 import { cn } from '../../lib/utils';
 import TickerLogo from '../shared/TickerLogo';
@@ -12,7 +12,6 @@ interface Props {
   onDelete: (id: string, ticker: string) => void;
   onAddTrade: () => void;
   onAddCash: () => void;
-  onImport: () => void;
   onExport: () => void;
   onClearAll: () => void;
 }
@@ -34,7 +33,7 @@ const TYPE_BADGE: Record<TransactionType, { label: string; border: string; text:
 
 
 export default function TransactionsTab({
-  transactions, onEdit, onDelete, onAddTrade, onAddCash, onImport, onExport, onClearAll,
+  transactions, onEdit, onDelete, onAddTrade, onAddCash, onExport, onClearAll,
 }: Props) {
   const isHidden = usePrivacy();
   const [filter, setFilter] = useState<Filter>('all');
@@ -156,13 +155,6 @@ export default function TransactionsTab({
           >
             <Trash2 className="w-3.5 h-3.5" />
             Clear Log
-          </button>
-          <button
-            onClick={onImport}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-zinc-700 text-zinc-300 hover:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
-          >
-            <FolderUp className="w-3.5 h-3.5" />
-            Import
           </button>
           <button
             onClick={onAddTrade}

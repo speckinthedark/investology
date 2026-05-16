@@ -215,3 +215,18 @@ export interface StockInsights {
     companyName: string | null;
   } | null;
 }
+
+export interface SnaptradeAccount {
+  id: string;
+  name: string;
+  brokerage: string;
+  authorizationId: string;
+}
+
+export interface SnaptradeSettings {
+  snaptradeUserId: string;
+  userSecret: string;
+  connectedAt: string;
+  lastSyncedAt: string | null;
+  accounts: SnaptradeAccount[];
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
@@ -9,7 +9,8 @@ import { fetchStockData, fetchPriceHistory, fetchSP500YTD, fetchFXRates } from '
 
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
-import Sidebar from './components/Sidebar';
+import Sidebar, { Tab } from './components/Sidebar';
+import Topbar from './components/Topbar';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
 import TransactionModal from './components/TransactionModal';
@@ -20,17 +21,18 @@ import TransactionsTab from './components/tabs/TransactionsTab';
 import PerformanceTab from './components/tabs/PerformanceTab';
 import InsightsTab from './components/tabs/InsightsTab';
 import ResearchTab from './components/tabs/ResearchTab';
+import ConnectionsTab from './components/tabs/ConnectionsTab';
+import { useSnaptrade } from './hooks/useSnaptrade';
 
 import { StockData, Transaction, TransactionType, PriceHistory } from './types';
 import { cn } from './lib/utils';
 import { PrivacyContext, HIDDEN } from './contexts/PrivacyContext';
 import { computeYTDTWR } from './lib/portfolio';
 
-type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research';
-
 export default function App() {
   const { user, isReady, login, logout } = useAuth();
   const { holdings, transactions, cashBalance, firestoreError, setCashBalance, addTransaction, bulkImportTransactions, deleteTransaction, deleteHolding, clearAllTransactions } = usePortfolio(user);
+  const snaptrade = useSnaptrade(user);
 
   const [stockPrices, setStockPrices] = useState<Record<string, StockData>>({});
   const [priceHistory, setPriceHistory] = useState<PriceHistory>({});
@@ -48,6 +50,7 @@ export default function App() {
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [showImportGuide, setShowImportGuide] = useState(false);
+  const pendingSnaptradeAuth = useRef(false);
 
   useEffect(() => {
     if (holdings.length > 0 && Object.keys(stockPrices).length === 0) {
@@ -72,6 +75,39 @@ export default function App() {
 
   useEffect(() => { fetchSP500YTD().then(setSP500YTD); }, []);
   useEffect(() => { fetchFXRates().then(setFxRates); }, []);
+
+  // Detect OAuth redirect back from SnapTrade portal — set flag immediately, flush when credentials load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('snaptrade_auth') === 'success') {
+      history.replaceState(null, '', window.location.pathname);
+      setActiveTab('connections');
+      pendingSnaptradeAuth.current = true;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const syncFromSnaptrade = async (txs: Omit<import('./types').Transaction, 'id'>[]) => {
+    await clearAllTransactions();
+    await bulkImportTransactions(txs);
+  };
+
+  useEffect(() => {
+    if (!snaptrade.credentials) return;
+    if (pendingSnaptradeAuth.current) {
+      pendingSnaptradeAuth.current = false;
+      snaptrade.refreshAccounts();
+      snaptrade.sync(syncFromSnaptrade);
+      return;
+    }
+    const lastSync = snaptrade.lastSyncedAt ? new Date(snaptrade.lastSyncedAt) : null;
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    if (!lastSync || lastSync < oneHourAgo) {
+      snaptrade.sync(syncFromSnaptrade);
+    }
+  // snaptrade.sync is a new reference every render; adding it would loop
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snaptrade.credentials]);
 
   const refreshPrices = async () => {
     if (holdings.length === 0) return;
@@ -98,6 +134,12 @@ export default function App() {
     () => computeYTDTWR(transactions, priceHistory, stockPrices),
     [transactions, priceHistory, stockPrices],
   );
+
+  const connectionStatus: 'connected' | 'error' | 'disconnected' = snaptrade.syncError
+    ? 'error'
+    : snaptrade.accounts.length > 0
+    ? 'connected'
+    : 'disconnected';
 
   const handleExport = () => {
     const sorted = [...transactions].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -164,10 +206,22 @@ export default function App() {
           user={user}
           isRefreshing={isRefreshing}
           onRefresh={refreshPrices}
+          connectionStatus={connectionStatus}
         />
 
         {/* Main column */}
         <div className="flex flex-col overflow-hidden">
+          <Topbar
+            user={user}
+            isRefreshing={isRefreshing}
+            onRefresh={refreshPrices}
+            onLogout={logout}
+            snaptradeAccounts={snaptrade.accounts}
+            snaptradeLastSyncedAt={snaptrade.lastSyncedAt}
+            snaptradeSyncing={snaptrade.isSyncing}
+            snaptradeSyncError={snaptrade.syncError}
+            onNavigateToConnections={() => setActiveTab('connections')}
+          />
           {firestoreError && (
             <div className="bg-rose-950/80 border-b border-rose-800 px-4 py-3 text-sm text-rose-300 flex items-start gap-2 shrink-0">
               <span className="font-bold shrink-0">Firestore error:</span>
@@ -296,7 +350,6 @@ export default function App() {
                     onDelete={handleDeleteTransaction}
                     onAddTrade={() => openModal('buy')}
                     onAddCash={() => openModal('deposit')}
-                    onImport={() => setShowImportGuide(true)}
                     onExport={handleExport}
                     onClearAll={handleClearAll}
                   />
@@ -344,6 +397,20 @@ export default function App() {
                     holdings={holdings}
                     initialTicker={researchTicker}
                     onInitialTickerConsumed={() => setResearchTicker(null)}
+                  />
+                )}
+                {activeTab === 'connections' && (
+                  <ConnectionsTab
+                    credentials={snaptrade.credentials}
+                    accounts={snaptrade.accounts}
+                    lastSyncedAt={snaptrade.lastSyncedAt}
+                    isSyncing={snaptrade.isSyncing}
+                    syncError={snaptrade.syncError}
+                    onRegister={snaptrade.register}
+                    onGetConnectUrl={snaptrade.getConnectUrl}
+                    onSync={() => snaptrade.sync(syncFromSnaptrade)}
+                    onDisconnect={snaptrade.disconnect}
+                    onShowCsvImport={() => setShowImportGuide(true)}
                   />
                 )}
               </motion.div>
