@@ -625,13 +625,25 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
     const { firebaseUid } = req.body as { firebaseUid: string };
     if (!firebaseUid) return res.status(400).json({ error: 'firebaseUid required' });
+    const doRegister = () => snaptrade!.authentication.registerSnapTradeUser({ userId: firebaseUid });
     try {
-      const response = await snaptrade.authentication.registerSnapTradeUser({
-        userId: firebaseUid,
-      });
+      const response = await doRegister();
       const { userId: snaptradeUserId, userSecret } = response.data as { userId: string; userSecret: string };
       res.json({ snaptradeUserId, userSecret });
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.status === 400) {
+        // User already exists in SnapTrade — delete and re-register to get a fresh secret
+        try {
+          await snaptrade.authentication.deleteSnapTradeUser({ userId: firebaseUid });
+          const response = await doRegister();
+          const { userId: snaptradeUserId, userSecret } = response.data as { userId: string; userSecret: string };
+          return res.json({ snaptradeUserId, userSecret });
+        } catch (e2: any) {
+          console.error('SnapTrade re-register error:', e2);
+          const detail = e2?.responseBody ? JSON.parse(e2.responseBody)?.detail : null;
+          return res.status(500).json({ error: detail ?? 'Registration failed — delete existing users from the SnapTrade dashboard and try again' });
+        }
+      }
       console.error('SnapTrade register error:', e);
       res.status(500).json({ error: 'Registration failed' });
     }
@@ -652,7 +664,6 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
         userId: snaptradeUserId,
         userSecret,
         customRedirect: redirectUri,
-        immediateRedirect: true,
       });
       const { redirectURI } = response.data as { redirectURI: string };
       res.json({ redirectUri: redirectURI });
@@ -712,49 +723,62 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
 
   app.post('/api/snaptrade/sync', async (req, res) => {
     if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { snaptradeUserId, userSecret } = req.body as { snaptradeUserId: string; userSecret: string };
+    const { snaptradeUserId, userSecret, accountIds } = req.body as {
+      snaptradeUserId: string;
+      userSecret: string;
+      accountIds: string[];
+    };
     if (!snaptradeUserId || !userSecret) {
       return res.status(400).json({ error: 'snaptradeUserId and userSecret required' });
     }
+    if (!accountIds?.length) {
+      return res.json({ transactions: [] });
+    }
     try {
-      const response = await snaptrade.transactionsAndReporting.getActivities({
-        userId: snaptradeUserId,
-        userSecret,
-        startDate: '2010-01-01',
-        endDate: new Date().toISOString().split('T')[0],
-      });
-
-      type RawActivity = {
-        type?: string;
-        symbol?: { symbol?: { symbol?: string } };
+      type RawPosition = {
+        symbol?: { symbol?: { symbol?: string; raw_symbol?: string } };
         units?: number | null;
+        average_purchase_price?: number | null;
         price?: number | null;
-        trade_date?: string | null;
       };
 
-      const raw = response.data as RawActivity[];
+      const positionMap = new Map<string, { shares: number; price: number }>();
 
-      const transactions = raw
-        .filter((a) => {
-          if (a.type !== 'BUY' && a.type !== 'SELL') return false;
-          if (!a.symbol?.symbol?.symbol) return false;
-          if (!a.units || a.units === 0) return false;
-          if (a.price == null) return false;
-          if (!a.trade_date) return false;
-          return true;
-        })
-        .map((a) => ({
-          ticker: a.symbol!.symbol!.symbol!.toUpperCase(),
-          type: a.type === 'BUY' ? 'buy' : 'sell' as 'buy' | 'sell',
-          shares: Math.abs(a.units!),
-          price: a.price!,
-          timestamp: new Date(a.trade_date!).toISOString(),
-        }))
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      for (const accountId of accountIds) {
+        const response = await snaptrade!.accountInformation.getUserAccountPositions({
+          accountId,
+          userId: snaptradeUserId,
+          userSecret,
+        });
+        const positions = response.data as RawPosition[];
+        for (const pos of positions) {
+          const ticker = (pos.symbol?.symbol?.raw_symbol ?? pos.symbol?.symbol?.symbol ?? '').toUpperCase();
+          if (!ticker || !pos.units || pos.units === 0) continue;
+          const price = pos.average_purchase_price ?? pos.price;
+          if (!price) continue;
+          const existing = positionMap.get(ticker);
+          if (existing) {
+            const totalShares = existing.shares + pos.units;
+            existing.price = (existing.price * existing.shares + price * pos.units) / totalShares;
+            existing.shares = totalShares;
+          } else {
+            positionMap.set(ticker, { shares: pos.units, price });
+          }
+        }
+      }
+
+      const today = new Date().toISOString();
+      const transactions = Array.from(positionMap.entries()).map(([ticker, { shares, price }]) => ({
+        ticker,
+        type: 'buy' as const,
+        shares,
+        price,
+        timestamp: today,
+      }));
 
       res.json({ transactions });
-    } catch (e) {
-      console.error('SnapTrade sync error:', e);
+    } catch (e: any) {
+      console.error('SnapTrade sync error:', e?.status, e?.responseBody ?? e?.message);
       res.status(500).json({ error: 'Sync failed' });
     }
   });

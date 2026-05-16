@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
@@ -50,6 +50,7 @@ export default function App() {
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [showImportGuide, setShowImportGuide] = useState(false);
+  const pendingSnaptradeAuth = useRef(false);
 
   useEffect(() => {
     if (holdings.length > 0 && Object.keys(stockPrices).length === 0) {
@@ -75,23 +76,34 @@ export default function App() {
   useEffect(() => { fetchSP500YTD().then(setSP500YTD); }, []);
   useEffect(() => { fetchFXRates().then(setFxRates); }, []);
 
-  // Detect OAuth redirect back from SnapTrade portal regardless of active tab
+  // Detect OAuth redirect back from SnapTrade portal — set flag immediately, flush when credentials load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('snaptrade_auth') === 'success') {
       history.replaceState(null, '', window.location.pathname);
       setActiveTab('connections');
-      snaptrade.refreshAccounts();
+      pendingSnaptradeAuth.current = true;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const syncFromSnaptrade = async (txs: Omit<import('./types').Transaction, 'id'>[]) => {
+    await clearAllTransactions();
+    await bulkImportTransactions(txs);
+  };
+
   useEffect(() => {
     if (!snaptrade.credentials) return;
+    if (pendingSnaptradeAuth.current) {
+      pendingSnaptradeAuth.current = false;
+      snaptrade.refreshAccounts();
+      snaptrade.sync(syncFromSnaptrade);
+      return;
+    }
     const lastSync = snaptrade.lastSyncedAt ? new Date(snaptrade.lastSyncedAt) : null;
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     if (!lastSync || lastSync < oneHourAgo) {
-      snaptrade.sync(bulkImportTransactions);
+      snaptrade.sync(syncFromSnaptrade);
     }
   // snaptrade.sync is a new reference every render; adding it would loop
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -396,7 +408,7 @@ export default function App() {
                     syncError={snaptrade.syncError}
                     onRegister={snaptrade.register}
                     onGetConnectUrl={snaptrade.getConnectUrl}
-                    onSync={() => snaptrade.sync(bulkImportTransactions)}
+                    onSync={() => snaptrade.sync(syncFromSnaptrade)}
                     onDisconnect={snaptrade.disconnect}
                     onShowCsvImport={() => setShowImportGuide(true)}
                   />

@@ -91,10 +91,11 @@ export function useSnaptrade(user: User | null) {
     setIsSyncing(true);
     setSyncError(false);
     try {
+      const accountIds = (settings?.accounts ?? []).map((a) => a.id);
       const res = await fetch('/api/snaptrade/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify({ ...credentials, accountIds }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       const { transactions } = await res.json() as { transactions: Omit<Transaction, 'id'>[] };
