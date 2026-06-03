@@ -1,5 +1,5 @@
 import { useMemo, useState, ElementType } from 'react';
-import { ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react';
 import { Holding, StockData } from '../../types';
 import { cn } from '../../lib/utils';
@@ -211,8 +211,71 @@ export default function PerformanceTab({
             </div>
           )}
         </div>
-        {/* Right: attribution — Task 5 */}
-        <div />
+        {/* Right: attribution */}
+        <div className="flex flex-col gap-6">
+
+          {/* Top Contributors */}
+          <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Top Contributors</div>
+            <p className="text-xs text-zinc-600 mb-5">Dollar P/L · top 3 winners & bottom 2 losers</p>
+            {topContributors.winners.length === 0 && topContributors.losers.length === 0 ? (
+              <div className="flex items-center justify-center h-24 text-zinc-600 text-sm italic">No data</div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                {topContributors.winners.map((h) => (
+                  <ContributorRow key={h.ticker} holding={h} maxAbs={topContributors.maxAbs} isWinner={true} isHidden={isHidden} />
+                ))}
+                {topContributors.losers.length > 0 && (
+                  <div className="h-px bg-zinc-800 my-1" />
+                )}
+                {topContributors.losers.map((h) => (
+                  <ContributorRow key={h.ticker} holding={h} maxAbs={topContributors.maxAbs} isWinner={false} isHidden={isHidden} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sector Breakdown */}
+          <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-5">Sector Breakdown</div>
+            {sectorData.length === 0 ? (
+              <div className="flex items-center justify-center h-24 text-zinc-600 text-sm italic">No data</div>
+            ) : (
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <ResponsiveContainer width={90} height={90}>
+                    <PieChart>
+                      <Pie
+                        data={sectorData}
+                        dataKey="value"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={28}
+                        outerRadius={44}
+                        strokeWidth={0}
+                        isAnimationActive={false}
+                      >
+                        {sectorData.map((entry) => (
+                          <Cell key={entry.name} fill={sectorColor(entry.name)} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-col gap-2 min-w-0 pt-1">
+                  {sectorData.map((s) => (
+                    <div key={s.name} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: sectorColor(s.name) }} />
+                      <span className="text-xs text-zinc-400 truncate">{s.name}</span>
+                      <span className="text-xs font-bold text-white ml-auto pl-2 flex-shrink-0">{s.pct.toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
 
     </div>
@@ -336,5 +399,38 @@ function HeaderCell({
         {isActive ? (sortDir === 'desc' ? '↓' : '↑') : '↕'}
       </span>
     </button>
+  );
+}
+
+function ContributorRow({
+  holding, maxAbs, isWinner, isHidden,
+}: {
+  holding: EnrichedHolding;
+  maxAbs: number;
+  isWinner: boolean;
+  isHidden: boolean;
+}) {
+  const barPct = (Math.abs(holding.gainDollar) / maxAbs) * 46;
+  const color = isWinner ? '#34d399' : '#f87171';
+  const label = isHidden
+    ? HIDDEN
+    : `${isWinner ? '+' : '−'}$${Math.abs(holding.gainDollar).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+
+  return (
+    <div className="flex items-center gap-2 h-7">
+      <span className="w-10 text-xs font-bold text-white flex-shrink-0">{holding.ticker}</span>
+      <div className="flex-1 flex justify-end">
+        {!isWinner && (
+          <div className="h-3.5 rounded-sm opacity-75" style={{ width: `${barPct}%`, backgroundColor: color }} />
+        )}
+      </div>
+      <div className="w-px h-4 bg-zinc-700 flex-shrink-0" />
+      <div className="flex-1">
+        {isWinner && (
+          <div className="h-3.5 rounded-sm opacity-75" style={{ width: `${barPct}%`, backgroundColor: color }} />
+        )}
+      </div>
+      <span className="w-16 text-right text-xs font-bold flex-shrink-0" style={{ color }}>{label}</span>
+    </div>
   );
 }
