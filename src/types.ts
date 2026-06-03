@@ -26,6 +26,7 @@ export interface StockData {
   changePercent: number;
   sector: string;
   history: { date: string; price: number }[];
+  beta: number | null;
 }
 
 export type TransactionType = Transaction['type'];

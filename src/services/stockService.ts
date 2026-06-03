@@ -51,6 +51,7 @@ function mockStockData(ticker: string): StockData {
       date: new Date(Date.now() - (6 - i) * 86400000).toISOString().split('T')[0],
       price: parseFloat((base + (Math.random() - 0.5) * 10).toFixed(2)),
     })),
+    beta: null,
   };
 }
 

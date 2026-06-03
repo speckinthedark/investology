@@ -353,6 +353,7 @@ async function startServer() {
         changePercent: (quote as any).regularMarketChangePercent ?? 0,
         sector: (summary as any)?.assetProfile?.sector ?? 'Other',
         history,
+        beta: (quote as any).beta ?? null,
       });
     } catch (e) {
       console.error('Yahoo Finance quote error:', e);
