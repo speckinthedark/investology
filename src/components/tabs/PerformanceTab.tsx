@@ -203,7 +203,7 @@ export default function PerformanceTab({
                 <HeaderCell label="Unrealized P/L" sortKey="gainDollar" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <HeaderCell label="Mkt Value" sortKey="marketValue" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
                 <HeaderCell label="Weight" sortKey="weight" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">21D</div>
+                <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">History</div>
               </div>
               {sorted.map((h) => (
                 <HoldingRow key={h.ticker} holding={h} isHidden={isHidden} maxAbsGainPct={maxAbsGainPct} />
