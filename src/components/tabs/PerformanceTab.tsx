@@ -185,7 +185,7 @@ export default function PerformanceTab({
         />
       </div>
 
-      {/* ── Two-column body (filled in Tasks 4 & 5) ── */}
+      {/* ── Two-column body ── */}
       <div className="grid grid-cols-[3fr_2fr] gap-6 items-start">
         {/* Left: holdings table */}
         <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">

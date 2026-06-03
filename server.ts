@@ -321,7 +321,7 @@ async function startServer() {
   // NOTE: This catch-all must remain BELOW all /api/stock/[specific]/:ticker routes
   // (e.g. /api/stock/detail/:ticker, /api/stock/insights/:ticker). Express matches
   // routes in registration order; moving this above them would silently swallow requests.
-  // --- Stock quote + 21-day sparkline ---
+  // --- Stock quote + 35-day price history ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
 
