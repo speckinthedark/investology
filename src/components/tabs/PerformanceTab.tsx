@@ -1,8 +1,10 @@
 import { useMemo, useState, ElementType } from 'react';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react';
 import { Holding, StockData } from '../../types';
 import { cn } from '../../lib/utils';
 import { usePrivacy, HIDDEN } from '../../contexts/PrivacyContext';
+import TickerLogo from '../shared/TickerLogo';
 
 interface Props {
   holdings: Holding[];
@@ -185,8 +187,30 @@ export default function PerformanceTab({
 
       {/* ── Two-column body (filled in Tasks 4 & 5) ── */}
       <div className="grid grid-cols-[3fr_2fr] gap-6 items-start">
-        {/* Left: holdings table — Task 4 */}
-        <div />
+        {/* Left: holdings table */}
+        <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
+          <h3 className="text-xl font-bold italic text-white mb-6">Holdings Performance</h3>
+          {sorted.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 text-zinc-600 h-40">
+              <BarChart3 className="w-6 h-6 opacity-30" />
+              <p className="text-sm italic">Add holdings to see performance breakdown.</p>
+            </div>
+          ) : (
+            <div>
+              <div className="grid grid-cols-[1.4fr_1.8fr_1fr_1fr_0.8fr_80px] gap-3 pb-3 border-b border-zinc-800">
+                <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Ticker</div>
+                <HeaderCell label="Gain %" sortKey="gainPct" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <HeaderCell label="Unrealized P/L" sortKey="gainDollar" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <HeaderCell label="Mkt Value" sortKey="marketValue" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <HeaderCell label="Weight" sortKey="weight" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">21D</div>
+              </div>
+              {sorted.map((h) => (
+                <HoldingRow key={h.ticker} holding={h} isHidden={isHidden} maxAbsGainPct={maxAbsGainPct} />
+              ))}
+            </div>
+          )}
+        </div>
         {/* Right: attribution — Task 5 */}
         <div />
       </div>
@@ -216,5 +240,101 @@ function StatCard({
       <div className={cn('text-3xl font-light tracking-tighter', color)}>{value}</div>
       <div className="text-[10px] text-zinc-600 leading-snug">{sub}</div>
     </div>
+  );
+}
+
+function Sparkline({ ticker, history }: { ticker: string; history: { date: string; price: number }[] }) {
+  if (history.length < 2) {
+    return <div className="h-6 w-full bg-zinc-800 rounded animate-pulse" />;
+  }
+  const first = history[0].price;
+  const last = history[history.length - 1].price;
+  const color = last >= first ? '#34d399' : '#f87171';
+  const gradId = `spark-${ticker}`;
+  return (
+    <ResponsiveContainer width="100%" height={24}>
+      <AreaChart data={history} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+            <stop offset="95%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area
+          type="monotone"
+          dataKey="price"
+          stroke={color}
+          strokeWidth={1.5}
+          fill={`url(#${gradId})`}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+function HoldingRow({
+  holding, isHidden, maxAbsGainPct,
+}: {
+  holding: EnrichedHolding;
+  isHidden: boolean;
+  maxAbsGainPct: number;
+}) {
+  const positive = holding.gainPct >= 0;
+  const barWidth = maxAbsGainPct > 0 ? (Math.abs(holding.gainPct) / maxAbsGainPct) * 100 : 0;
+  const barColor = positive ? '#34d399' : '#f87171';
+  const gainLabel = isHidden
+    ? HIDDEN
+    : `${holding.gainDollar >= 0 ? '+' : '−'}$${Math.abs(holding.gainDollar).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const valueLabel = isHidden
+    ? HIDDEN
+    : `$${holding.marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  return (
+    <div className="grid grid-cols-[1.4fr_1.8fr_1fr_1fr_0.8fr_80px] gap-3 py-3 border-b border-zinc-800/50 last:border-0 items-center hover:bg-zinc-800/30 -mx-2 px-2 rounded-lg transition-colors">
+      <div className="flex items-center gap-2">
+        <TickerLogo ticker={holding.ticker} size="sm" />
+        <span className="text-sm font-bold text-white">{holding.ticker}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={cn('text-sm font-bold w-14 flex-shrink-0', positive ? 'text-emerald-400' : 'text-rose-400')}>
+          {holding.gainPct >= 0 ? '+' : ''}{holding.gainPct.toFixed(2)}%
+        </span>
+        <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${barWidth}%`, backgroundColor: barColor, opacity: 0.75 }}
+          />
+        </div>
+      </div>
+      <div className={cn('text-sm', positive ? 'text-emerald-400' : 'text-rose-400')}>{gainLabel}</div>
+      <div className="text-sm text-zinc-400">{valueLabel}</div>
+      <div className="text-sm text-zinc-400">{holding.weight.toFixed(1)}%</div>
+      <Sparkline ticker={holding.ticker} history={holding.history} />
+    </div>
+  );
+}
+
+function HeaderCell({
+  label, sortKey, activeSortKey, sortDir, onSort,
+}: {
+  label: string;
+  sortKey: SortKey;
+  activeSortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (k: SortKey) => void;
+}) {
+  const isActive = sortKey === activeSortKey;
+  return (
+    <button
+      onClick={() => onSort(sortKey)}
+      className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-zinc-600 hover:text-zinc-400 transition-colors"
+    >
+      {label}
+      <span className={isActive ? 'text-zinc-300' : 'text-zinc-700'}>
+        {isActive ? (sortDir === 'desc' ? '↓' : '↑') : '↕'}
+      </span>
+    </button>
   );
 }
