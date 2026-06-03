@@ -1,13 +1,8 @@
 import { useMemo, useState, ElementType } from 'react';
-import {
-  ResponsiveContainer, AreaChart, Area,
-  PieChart, Pie, Cell,
-} from 'recharts';
-import { TrendingUp, TrendingDown, Activity, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { Holding, StockData } from '../../types';
 import { cn } from '../../lib/utils';
 import { usePrivacy, HIDDEN } from '../../contexts/PrivacyContext';
-import TickerLogo from '../shared/TickerLogo';
 
 interface Props {
   holdings: Holding[];
@@ -92,9 +87,11 @@ export default function PerformanceTab({
 
   const portfolioBeta = useMemo(() => {
     const withBeta = enriched.filter((h) => h.beta != null);
-    if (withBeta.length === 0 || totalStockValue === 0) return null;
-    return withBeta.reduce((sum, h) => sum + (h.marketValue / totalStockValue) * h.beta!, 0);
-  }, [enriched, totalStockValue]);
+    if (withBeta.length === 0) return null;
+    const withBetaValue = withBeta.reduce((s, h) => s + h.marketValue, 0);
+    if (withBetaValue === 0) return null;
+    return withBeta.reduce((sum, h) => sum + (h.marketValue / withBetaValue) * h.beta!, 0);
+  }, [enriched]);
 
   const maxAbsGainPct = useMemo(
     () => Math.max(...enriched.map((h) => Math.abs(h.gainPct)), 1),
