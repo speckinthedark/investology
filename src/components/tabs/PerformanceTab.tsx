@@ -35,7 +35,7 @@ const SECTOR_COLORS: Record<string, string> = {
   Energy: '#f59e0b',
   'Consumer Cyclical': '#fb7185',
   'Consumer Defensive': '#f97316',
-  Industrials: '#f97316',
+  Industrials: '#94a3b8',
   'Communication Services': '#22d3ee',
   'Real Estate': '#84cc16',
   Materials: '#a3e635',
@@ -242,8 +242,8 @@ export default function PerformanceTab({
               <div className="flex items-center justify-center h-24 text-zinc-600 text-sm italic">No data</div>
             ) : (
               <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <ResponsiveContainer width={90} height={90}>
+                <div className="flex-shrink-0" style={{ width: 90, height: 90 }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={sectorData}
