@@ -356,9 +356,8 @@ export default function App() {
                 )}
                 {activeTab === 'performance' && (
                   <PerformanceTab
-                    transactions={transactions}
-                    priceHistory={priceHistory}
-                    isPriceHistoryLoading={isPriceHistoryLoading}
+                    holdings={holdings}
+                    stockPrices={stockPrices}
                     totalStockValue={totalValue}
                     totalCostBasis={totalCostBasis}
                   />
