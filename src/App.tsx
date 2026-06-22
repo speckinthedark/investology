@@ -262,7 +262,7 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-4 overflow-x-auto md:overflow-visible md:flex-wrap md:gap-8 [-webkit-overflow-scrolling:touch]">
+              <div className="flex items-center gap-4 overflow-x-auto md:overflow-visible md:flex-wrap md:gap-8 [-webkit-overflow-scrolling:touch] no-scrollbar">
                 <button
                   onClick={() => setShowCashModal(true)}
                   className="text-left hover:bg-zinc-800/50 rounded-lg transition-colors px-2 py-1 -mx-2 -my-1 shrink-0"
