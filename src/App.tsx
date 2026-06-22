@@ -409,6 +409,7 @@ export default function App() {
                     onGetConnectUrl={snaptrade.getConnectUrl}
                     onSync={() => snaptrade.sync(syncFromSnaptrade)}
                     onDisconnect={snaptrade.disconnect}
+                    onClearApiKeys={snaptrade.clearApiKeys}
                     onShowCsvImport={() => setShowImportGuide(true)}
                   />
                 )}
