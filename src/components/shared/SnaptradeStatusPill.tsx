@@ -48,12 +48,12 @@ export default function SnaptradeStatusPill({
   return (
     <button
       onClick={onNavigateToConnections}
-      className="flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/60 hover:border-zinc-600 rounded-full px-3 py-1.5 transition-all"
+      className="flex items-center gap-2 bg-zinc-800/80 border border-zinc-700/60 hover:border-zinc-600 rounded-full px-1.5 py-1.5 md:px-3 transition-all"
     >
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
-      <span className="text-[11px] font-semibold text-zinc-300 whitespace-nowrap">{label}</span>
+      <span className="hidden md:inline text-[11px] font-semibold text-zinc-300 whitespace-nowrap">{label}</span>
       {sublabel && (
-        <span className="text-[10px] text-zinc-500 whitespace-nowrap">{sublabel}</span>
+        <span className="hidden md:inline text-[10px] text-zinc-500 whitespace-nowrap">{sublabel}</span>
       )}
     </button>
   );
