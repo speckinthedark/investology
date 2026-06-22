@@ -31,7 +31,6 @@ export interface StockData {
 
 export type TransactionType = Transaction['type'];
 export type SortConfig = { key: string; direction: 'asc' | 'desc' };
-export type PriceHistory = Record<string, { date: string; close: number }[]>;
 
 export interface StoredMessage {
   id: string;

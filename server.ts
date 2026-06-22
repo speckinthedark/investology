@@ -354,42 +354,6 @@ async function startServer() {
     }
   });
 
-  // --- Yahoo Finance monthly price history ---
-  app.post('/api/price-history', async (req, res) => {
-    const { tickers, from } = req.body as { tickers: string[]; from: string };
-    const stockTickers = (tickers ?? []).filter((t: string) => t !== 'CASH');
-    if (stockTickers.length === 0) return res.json({});
-
-    const results = await Promise.allSettled(
-      stockTickers.map(async (ticker: string) => {
-        const quotes = (await yahooFinance.historical(ticker, {
-          period1: from,
-          period2: new Date().toISOString().split('T')[0],
-          interval: '1mo',
-        })) as { date: Date; close: number | null }[];
-        const history = quotes
-          .filter((q) => q.close != null)
-          .map((q) => {
-            const d = q.date;
-            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            return { date: dateStr, close: q.close ?? 0 };
-          });
-        return [ticker, history] as const;
-      })
-    );
-
-    const data: Record<string, { date: string; close: number }[]> = {};
-    for (const r of results) {
-      if (r.status === 'fulfilled') {
-        const [ticker, history] = r.value;
-        data[ticker] = history;
-      } else {
-        console.warn('Price history failed for a ticker:', r.reason?.message ?? r.reason);
-      }
-    }
-    res.json(data);
-  });
-
   // --- Gemini AI stock data fallback ---
   app.get('/api/stock-ai/:ticker', async (req, res) => {
     const { ticker } = req.params;

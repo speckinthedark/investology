@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RefreshCw, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
 import { usePortfolio } from './hooks/usePortfolio';
-import { fetchStockData, fetchPriceHistory, fetchSP500YTD, fetchFXRates } from './services/stockService';
+import { fetchStockData, fetchSP500YTD, fetchFXRates } from './services/stockService';
 
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -25,10 +25,9 @@ import ResearchTab from './components/tabs/ResearchTab';
 import ConnectionsTab from './components/tabs/ConnectionsTab';
 import { useSnaptrade } from './hooks/useSnaptrade';
 
-import { StockData, Transaction, TransactionType, PriceHistory } from './types';
+import { StockData, Transaction, TransactionType } from './types';
 import { cn } from './lib/utils';
 import { PrivacyContext, HIDDEN } from './contexts/PrivacyContext';
-import { computeYTDTWR } from './lib/portfolio';
 
 export default function App() {
   const { user, isReady, login, logout } = useAuth();
@@ -36,8 +35,6 @@ export default function App() {
   const snaptrade = useSnaptrade(user);
 
   const [stockPrices, setStockPrices] = useState<Record<string, StockData>>({});
-  const [priceHistory, setPriceHistory] = useState<PriceHistory>({});
-  const [isPriceHistoryLoading, setIsPriceHistoryLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
@@ -59,20 +56,6 @@ export default function App() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holdings]);
-
-  // Re-fetch monthly history whenever the set of held tickers changes
-  const holdingTickersKey = holdings.map((h) => h.ticker).sort().join(',');
-  useEffect(() => {
-    const tickers = holdings.map((h) => h.ticker).filter((t) => t !== 'CASH');
-    if (tickers.length === 0) return;
-    // Fetch from Jan 1 of the previous year to cover full YTD + last 12 months
-    const from = new Date(new Date().getFullYear() - 1, 0, 1).toISOString().split('T')[0];
-    setIsPriceHistoryLoading(true);
-    fetchPriceHistory(tickers, from)
-      .then(setPriceHistory)
-      .finally(() => setIsPriceHistoryLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [holdingTickersKey]);
 
   useEffect(() => { fetchSP500YTD().then(setSP500YTD); }, []);
   useEffect(() => { fetchFXRates().then(setFxRates); }, []);
@@ -130,11 +113,6 @@ export default function App() {
   const totalPortfolioGainPct = totalCostBasis > 0 ? (totalPortfolioGain / totalCostBasis) * 100 : 0;
   const totalDayChange = holdings.reduce((acc, h) => acc + h.shares * (stockPrices[h.ticker]?.change ?? 0), 0);
   const totalDayChangePct = totalPortfolioValue - totalDayChange > 0 ? (totalDayChange / (totalPortfolioValue - totalDayChange)) * 100 : 0;
-
-  const ytdTWR = useMemo(
-    () => computeYTDTWR(transactions, priceHistory, stockPrices),
-    [transactions, priceHistory, stockPrices],
-  );
 
   const connectionStatus: 'connected' | 'error' | 'disconnected' = snaptrade.syncError
     ? 'error'
@@ -288,14 +266,6 @@ export default function App() {
                       : `${totalDayChange >= 0 ? '+' : ''}$${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${totalDayChangePct.toFixed(2)}%)`}
                   </div>
                 </div>
-                {ytdTWR !== null && !isPriceHistoryLoading && (
-                  <div className="shrink-0">
-                    <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">YTD Return</div>
-                    <div className={cn('text-base font-black', ytdTWR >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                      {isHidden ? HIDDEN : `${ytdTWR >= 0 ? '+' : ''}${ytdTWR.toFixed(2)}%`}
-                    </div>
-                  </div>
-                )}
                 {sp500YTD !== null && (
                   <div className="shrink-0">
                     <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">S&amp;P 500 YTD</div>
