@@ -225,6 +225,8 @@ export interface SnaptradeAccount {
 }
 
 export interface SnaptradeSettings {
+  clientId: string;
+  consumerKey: string;
   snaptradeUserId: string;
   userSecret: string;
   connectedAt: string;
