@@ -640,7 +640,14 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
           return res.json({ snaptradeUserId, userSecret });
         } catch (e2: any) {
           console.error('SnapTrade re-register error:', e2);
-          const detail = e2?.responseBody ? JSON.parse(e2.responseBody)?.detail : null;
+          let detail: string | null = null;
+          try {
+            detail = typeof e2?.responseBody === 'string'
+              ? JSON.parse(e2.responseBody)?.detail
+              : e2?.responseBody?.detail ?? null;
+          } catch {
+            detail = null;
+          }
           return res.status(500).json({ error: detail ?? 'Registration failed — delete existing users from the SnapTrade dashboard and try again' });
         }
       }
