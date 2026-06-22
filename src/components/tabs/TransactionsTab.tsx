@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Pencil, Trash2, Download, ArrowUpDown, CreditCard, Search, X } from 'lucide-react';
+import { Pencil, Trash2, Download, Search, X } from 'lucide-react';
 import { Transaction, TransactionType } from '../../types';
 import { cn } from '../../lib/utils';
 import TickerLogo from '../shared/TickerLogo';
@@ -10,8 +10,6 @@ interface Props {
   transactions: Transaction[];
   onEdit: (tx: Transaction) => void;
   onDelete: (id: string, ticker: string) => void;
-  onAddTrade: () => void;
-  onAddCash: () => void;
   onExport: () => void;
   onClearAll: () => void;
 }
@@ -33,7 +31,7 @@ const TYPE_BADGE: Record<TransactionType, { label: string; border: string; text:
 
 
 export default function TransactionsTab({
-  transactions, onEdit, onDelete, onAddTrade, onAddCash, onExport, onClearAll,
+  transactions, onEdit, onDelete, onExport, onClearAll,
 }: Props) {
   const isHidden = usePrivacy();
   const [filter, setFilter] = useState<Filter>('all');
@@ -155,20 +153,6 @@ export default function TransactionsTab({
           >
             <Trash2 className="w-3.5 h-3.5" />
             Clear Log
-          </button>
-          <button
-            onClick={onAddTrade}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-white hover:bg-zinc-700 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
-          >
-            <ArrowUpDown className="w-3.5 h-3.5" />
-            Trade Asset
-          </button>
-          <button
-            onClick={onAddCash}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            Transfer Cash
           </button>
         </div>
       </div>

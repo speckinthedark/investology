@@ -335,8 +335,6 @@ export default function App() {
                     transactions={transactions}
                     onEdit={(tx) => openModal(tx.type, tx)}
                     onDelete={handleDeleteTransaction}
-                    onAddTrade={() => openModal('buy')}
-                    onAddCash={() => openModal('deposit')}
                     onExport={handleExport}
                     onClearAll={handleClearAll}
                   />
