@@ -26,6 +26,7 @@ export interface StockData {
   changePercent: number;
   sector: string;
   history: { date: string; price: number }[];
+  beta: number | null;
 }
 
 export type TransactionType = Transaction['type'];
@@ -224,6 +225,8 @@ export interface SnaptradeAccount {
 }
 
 export interface SnaptradeSettings {
+  clientId: string;
+  consumerKey: string;
   snaptradeUserId: string;
   userSecret: string;
   connectedAt: string;

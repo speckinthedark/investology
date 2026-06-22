@@ -31,10 +31,9 @@ A personal stock portfolio tracker with real-time quotes, multi-broker import, h
 - Import wizard supporting eToro XLSX and IBKR Flex Query XML
 
 ### Performance Tab
-- Portfolio value area chart with configurable time periods
-- Month-over-month returns bar chart
-- $10,000 invested comparison chart (portfolio vs per-holding)
-- Per-holding performance breakdown
+- 5 stat cards: Unrealized P/L, Total Gain %, Best Performer, Worst Performer, Portfolio Beta (weighted average)
+- Sortable holdings table: logo, gain % with proportional bar, unrealized P/L, market value, weight, 35-day sparkline
+- Attribution panel: diverging dollar P/L contributors chart (top 3 winners / bottom 2 losers) + sector breakdown donut
 
 ### Research Tab
 - **Default idle state**: tabbed market screeners — Day Gainers, Day Losers, Most Active, Growth Tech, Undervalued Growth, Undervalued Large Caps — 10 stocks each with price, day %, 52W %, market cap, volume ratio, P/E
@@ -43,8 +42,14 @@ A personal stock portfolio tracker with real-time quotes, multi-broker import, h
   - Portfolio callout if you hold the stock
   - Analyst rating strip (rating, price target, upside %) and valuation summary
   - Left column: Trading Snapshot, Fundamentals, Company info, Technical Outlook, Key Technicals — all scrollable
-  - Right column: TradingView price chart, financials bar chart (income / balance sheet / cash flow), bull & bear case summaries — independently scrollable
+  - Right column: price chart with toggleable MA overlays (21/50/200-day), financials bar chart (income / balance sheet / cash flow), bull & bear case summaries — independently scrollable
   - Back button to return to screeners
+
+### Connections Tab
+- Connect brokerage accounts via **SnapTrade** OAuth (supports 50+ brokers including IBKR, Schwab, Fidelity)
+- Auto-syncs holdings on login; manual sync available
+- Displays connected accounts with last-sync timestamp and error state
+- SnapTrade status pill in the top bar shows connection health at a glance
 
 ### AI Insights Tab
 - Multi-session agent chat powered by **Google ADK**
@@ -65,11 +70,12 @@ A personal stock portfolio tracker with real-time quotes, multi-broker import, h
 | Frontend | React 19, TypeScript, Vite 6 |
 | Styling | Tailwind CSS v4 (no config file) |
 | Animations | Framer Motion |
-| Charts | Recharts, TradingView widget embed |
+| Charts | Recharts (price chart, sparklines, sector donut) |
 | Backend | Express 4, `tsx` (no compile step) |
 | Auth + DB | Firebase Authentication (Google), Firestore |
 | Market data | `yahoo-finance2` (quotes, insights, screener, FX rates) |
 | AI agents | Google ADK (`@google/adk`), Gemini (`@google/genai`) |
+| Brokerage sync | SnapTrade (`snaptrade-typescript-sdk`) |
 | File parsing | `xlsx` (eToro), `fast-xml-parser` (IBKR) |
 | Notifications | Sonner |
 
@@ -84,11 +90,12 @@ Browser
   │
   ▼
 Express server  (server.ts — port 3000)
-  ├── /api/stock/:ticker              → yahoo-finance2 quote + sparkline
+  ├── /api/stock/:ticker              → quote + 35-day price history + beta + sector
   ├── /api/stock/detail/:ticker       → full fundamentals + financials history
   ├── /api/stock/insights/:ticker     → analyst rating, valuation, technicals, bull/bear
+  ├── /api/stock/chart/:ticker        → OHLCV history for Research price chart
   ├── /api/screener/:screenerId       → yahoo-finance2 screener (10 results)
-  ├── /api/price-history              → monthly closes for Performance charts
+  ├── /api/price-history              → monthly closes (YTD TWR computation)
   ├── /api/market/sp500-ytd           → ^GSPC YTD return
   ├── /api/market/fx-rates            → USD → INR, AUD live rates
   ├── /api/insights                   → Gemini portfolio analysis
@@ -97,6 +104,11 @@ Express server  (server.ts — port 3000)
   ├── /api/agent/chat                 → agent chat turn (SSE)
   ├── /api/import/etoro               → parse eToro XLSX
   ├── /api/import/ibkr                → parse IBKR XML
+  ├── /api/snaptrade/register         → register user with SnapTrade
+  ├── /api/snaptrade/connect-url      → OAuth redirect URL for brokerage connection
+  ├── /api/snaptrade/accounts         → fetch connected brokerage accounts
+  ├── /api/snaptrade/disconnect       → disconnect a brokerage account
+  ├── /api/snaptrade/sync             → sync holdings from connected accounts
   └── /* (dev: Vite middleware, prod: static dist/)
 
 Firebase (client-side SDK)
@@ -253,15 +265,16 @@ npx firebase deploy --only firestore:rules
         ├── tabs/
         │   ├── OverviewTab.tsx      # Holdings table, treemap, sector donut
         │   ├── TransactionsTab.tsx  # Transaction log, import/export
-        │   ├── PerformanceTab.tsx   # Portfolio value chart, per-holding performance
+        │   ├── PerformanceTab.tsx   # Stat cards, holdings table, attribution panel
         │   ├── ResearchTab.tsx      # Stock research orchestrator
-        │   └── InsightsTab.tsx      # AI agent chat interface
+        │   ├── InsightsTab.tsx      # AI agent chat interface
+        │   └── ConnectionsTab.tsx   # SnapTrade brokerage connections
         ├── research/
         │   ├── ScreenerView.tsx     # Tabbed market screeners (default idle state)
         │   ├── StockHero.tsx        # Ticker header (name, price, badges)
         │   ├── StockStatsTable.tsx  # Stats: fundamentals, technicals, key levels
         │   ├── StockSearchBar.tsx   # Ticker search input
-        │   ├── TradingViewChart.tsx # TradingView chart embed
+        │   ├── StockPriceChart.tsx  # In-house price chart with MA overlays
         │   ├── FinancialsChart.tsx  # Revenue / profit / cashflow bar charts
         │   ├── InsightsStrip.tsx    # Analyst rating + valuation strip
         │   ├── BullBearPanel.tsx    # Bull / bear case bullet points
@@ -274,7 +287,8 @@ npx firebase deploy --only firestore:rules
         │   ├── DCFResultCard.tsx
         │   └── MentionInput.tsx
         └── shared/
-            └── TickerLogo.tsx       # Company logo (Parqet CDN, FMP fallback)
+            ├── TickerLogo.tsx       # Company logo (Parqet CDN, FMP fallback)
+            └── SnaptradeStatusPill.tsx  # Connection status indicator in Topbar
 ```
 
 ---
@@ -286,3 +300,5 @@ npx firebase deploy --only firestore:rules
 - **IBKR date range**: A single Flex Query is limited to one year. Multi-year accounts need one file per year uploaded sequentially.
 - **Equities only**: The import pipeline filters to `STK` (stock) trades. Options, futures, and crypto are excluded.
 - **YTD TWR**: Computed from monthly price snapshots. Tickers bought and fully sold within the current year (no longer in the portfolio) are excluded from the calculation as their historical prices are not retained.
+- **Performance tab beta**: Yahoo Finance does not return beta for all tickers (e.g. ETFs, some foreign listings). Portfolio beta excludes holdings without beta data and is labeled accordingly.
+- **SnapTrade**: Each user brings their own free SnapTrade developer account (`clientId`/`consumerKey`), entered in the Connections tab. This keeps each user's brokerage connection quota independent rather than shared across everyone using the app. Switching keys later disconnects existing brokerage links, since SnapTrade ties registered users to the developer account that created them.

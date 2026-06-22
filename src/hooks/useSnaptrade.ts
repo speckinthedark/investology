@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { User } from 'firebase/auth';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, deleteDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { SnaptradeAccount, SnaptradeSettings, Transaction } from '../types';
 import { toast } from 'sonner';
@@ -23,24 +23,33 @@ export function useSnaptrade(user: User | null) {
   }, [user]);
 
   const credentials = useMemo(
-    () => settings ? { snaptradeUserId: settings.snaptradeUserId, userSecret: settings.userSecret } : null,
+    () => settings
+      ? {
+          clientId: settings.clientId,
+          consumerKey: settings.consumerKey,
+          snaptradeUserId: settings.snaptradeUserId,
+          userSecret: settings.userSecret,
+        }
+      : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [settings?.snaptradeUserId, settings?.userSecret],
+    [settings?.clientId, settings?.consumerKey, settings?.snaptradeUserId, settings?.userSecret],
   );
 
-  const register = async () => {
+  const register = async (clientId: string, consumerKey: string) => {
     if (!user) return;
     try {
       const res = await fetch('/api/snaptrade/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUid: user.uid }),
+        body: JSON.stringify({ firebaseUid: user.uid, clientId, consumerKey }),
       });
       if (!res.ok) throw new Error((await res.json()).error);
       const { snaptradeUserId, userSecret } = await res.json() as { snaptradeUserId: string; userSecret: string };
       await setDoc(
         doc(db, 'users', user.uid, 'settings', SNAPTRADE_DOC),
         {
+          clientId,
+          consumerKey,
           snaptradeUserId,
           userSecret,
           connectedAt: new Date().toISOString(),
@@ -56,14 +65,19 @@ export function useSnaptrade(user: User | null) {
 
   const getConnectUrl = async (): Promise<string> => {
     if (!credentials) throw new Error('Not registered');
-    const res = await fetch('/api/snaptrade/connect-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
-    if (!res.ok) throw new Error((await res.json()).error);
-    const { redirectUri } = await res.json() as { redirectUri: string };
-    return redirectUri;
+    try {
+      const res = await fetch('/api/snaptrade/connect-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const { redirectUri } = await res.json() as { redirectUri: string };
+      return redirectUri;
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate connect URL');
+      throw e;
+    }
   };
 
   const refreshAccounts = async () => {
@@ -135,6 +149,15 @@ export function useSnaptrade(user: User | null) {
     }
   };
 
+  const clearApiKeys = async () => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, 'users', user.uid, 'settings', SNAPTRADE_DOC));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to clear SnapTrade keys');
+    }
+  };
+
   return {
     credentials,
     accounts: settings?.accounts ?? [],
@@ -146,5 +169,6 @@ export function useSnaptrade(user: User | null) {
     refreshAccounts,
     sync,
     disconnect,
+    clearApiKeys,
   };
 }

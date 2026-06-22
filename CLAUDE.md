@@ -13,9 +13,10 @@ A personal stock portfolio tracker and research tool. Users connect their broker
 | Styling | Tailwind CSS v4 — **no config file**, uses `@import "tailwindcss"` in `src/index.css` |
 | Auth + DB | Firebase (Google Auth, Firestore) |
 | Market data | `yahoo-finance2` v3 |
-| Charts | Recharts, TradingView widget (iframe embed) |
+| Charts | Recharts (price chart with MA overlays, sparklines, sector donut) |
 | AI agents | Google ADK (`@google/adk`), Gemini via `@google/genai` |
 | Animations | Framer Motion |
+| Brokerage sync | SnapTrade (`snaptrade-typescript-sdk`) |
 | Notifications | Sonner |
 
 ---
@@ -41,11 +42,13 @@ npm run dev  →  tsx server.ts
 Create a `.env` file at the repo root:
 
 ```
-GEMINI_API_KEY=your_gemini_key   # required for AI agent features
-FINNHUB_API_KEY=                 # optional fallback, mostly unused now
+GEMINI_API_KEY=your_gemini_key          # required for AI agent features
+FINNHUB_API_KEY=                        # optional fallback, mostly unused now
 ```
 
 `firebase-applet-config.json` must also be present (contains Firebase project credentials). Do not commit either file.
+
+SnapTrade brokerage sync does not require server-side configuration — each user enters their own SnapTrade `clientId`/`consumerKey` in the Connections tab (stored in their Firestore settings doc).
 
 ---
 
@@ -68,6 +71,7 @@ src/
   hooks/
     useAuth.ts                   # Firebase auth state
     usePortfolio.ts              # Firestore holdings/transactions/cash CRUD
+    useSnaptrade.ts              # SnapTrade brokerage connection + sync state
     useAgentStream.ts            # SSE stream consumer for agent responses
     useChatSessions.ts           # Chat session management
   services/
@@ -80,16 +84,17 @@ src/
     tabs/                        # One component per main tab
       OverviewTab.tsx            # Holdings table, treemap, sector donut
       TransactionsTab.tsx        # Transaction history + CRUD
-      PerformanceTab.tsx         # Portfolio value chart, $10k growth, per-stock performance
+      PerformanceTab.tsx         # Stat cards, sortable holdings table, attribution panel
       ResearchTab.tsx            # Stock research — orchestrates all research sub-components
       InsightsTab.tsx            # AI agent chat interface
+      ConnectionsTab.tsx         # SnapTrade brokerage connections (connect, sync, disconnect)
     research/                    # Sub-components used only by ResearchTab
       ScreenerView.tsx           # Default idle state — 6 tabbed market screeners
       StockHero.tsx              # Ticker header (name, price, exchange, sector badges)
       StockStatsTable.tsx        # Left-column stats: Trading Snapshot, Fundamentals,
                                  #   Company, Technical Outlook, Key Technicals
       StockSearchBar.tsx         # Ticker search input
-      TradingViewChart.tsx       # TradingView chart iframe embed
+      StockPriceChart.tsx        # In-house Recharts price chart with MA overlays
       FinancialsChart.tsx        # Revenue/profit/cashflow bar charts (Recharts)
       InsightsStrip.tsx          # Analyst rating + valuation strip
       BullBearPanel.tsx          # Bull/bear case bullet points
@@ -98,6 +103,7 @@ src/
       PortfolioCallout.tsx       # "You hold X shares" callout if ticker is in portfolio
     shared/
       TickerLogo.tsx             # Company logo via Parqet CDN, FMP fallback
+      SnaptradeStatusPill.tsx    # Connection status indicator shown in Topbar
     agent/                       # AI agent UI components
       AgentChat.tsx
       AgentMessage.tsx
@@ -106,11 +112,14 @@ src/
       DCFResultCard.tsx
       MentionInput.tsx
     Sidebar.tsx                  # Left nav (tab icons, refresh, logout)
+    Topbar.tsx                   # Top bar with SnapTrade sync status pill
+    LoginPage.tsx                # Google Sign-In screen
+    ErrorBoundary.tsx            # React error boundary
     TransactionModal.tsx         # Buy/sell/deposit/withdrawal form
     CashBalanceModal.tsx
     ConfirmDialog.tsx
     AssetDetailPanel.tsx         # Slide-out panel for per-asset transaction history
-    ImportGuidePanel.tsx         # eToro / IBKR import wizard
+    ImportGuidePanel.tsx         # CSV import wizard (StockPulse format)
 ```
 
 ---
@@ -119,9 +128,10 @@ src/
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/stock/:ticker` | Quote + 7-day sparkline (catch-all — must stay last) |
+| GET | `/api/stock/:ticker` | Quote + 35-day price history + beta + sector (catch-all — must stay last) |
 | GET | `/api/stock/detail/:ticker` | Full research data (quote, fundamentals, financials history) |
 | GET | `/api/stock/insights/:ticker` | Yahoo Finance insights (recommendation, valuation, technicals, bull/bear) |
+| GET | `/api/stock/chart/:ticker` | OHLCV history for price chart (range + interval params) |
 | POST | `/api/price-history` | Monthly close prices for multiple tickers |
 | GET | `/api/screener/:screenerId` | Yahoo Finance screener (10 results) |
 | GET | `/api/market/sp500-ytd` | S&P 500 YTD return |
@@ -133,6 +143,11 @@ src/
 | POST | `/api/agent/chat` | Agent chat turn (SSE stream) |
 | POST | `/api/import/etoro` | Parse eToro XLSX export |
 | POST | `/api/import/ibkr` | Parse IBKR Flex Query XML |
+| POST | `/api/snaptrade/register` | Register Firebase user with SnapTrade |
+| POST | `/api/snaptrade/connect-url` | Generate OAuth redirect URL for brokerage connection |
+| POST | `/api/snaptrade/accounts` | Fetch connected brokerage accounts |
+| DELETE | `/api/snaptrade/disconnect` | Disconnect a brokerage account |
+| POST | `/api/snaptrade/sync` | Sync holdings from all connected accounts |
 
 **Route order is load-bearing.** `/api/stock/detail/:ticker` and `/api/stock/insights/:ticker` must be registered before `/api/stock/:ticker` or Express will swallow them.
 

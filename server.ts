@@ -24,13 +24,6 @@ const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   : null;
 
-const snaptrade = process.env.SNAPTRADE_CLIENT_ID && process.env.SNAPTRADE_CONSUMER_KEY
-  ? new Snaptrade({
-      clientId: process.env.SNAPTRADE_CLIENT_ID,
-      consumerKey: process.env.SNAPTRADE_CONSUMER_KEY,
-    })
-  : null;
-
 const EXCHANGE_MAP: Record<string, string> = {
   NMS: 'NASDAQ', NasdaqGS: 'NASDAQ', NasdaqGM: 'NASDAQ', NCM: 'NASDAQ',
   NYQ: 'NYSE', NYSE: 'NYSE',
@@ -321,7 +314,7 @@ async function startServer() {
   // NOTE: This catch-all must remain BELOW all /api/stock/[specific]/:ticker routes
   // (e.g. /api/stock/detail/:ticker, /api/stock/insights/:ticker). Express matches
   // routes in registration order; moving this above them would silently swallow requests.
-  // --- Stock quote + 21-day sparkline ---
+  // --- Stock quote + 35-day price history ---
   app.get('/api/stock/:ticker', async (req, res) => {
     const { ticker } = req.params;
 
@@ -353,6 +346,7 @@ async function startServer() {
         changePercent: (quote as any).regularMarketChangePercent ?? 0,
         sector: (summary as any)?.assetProfile?.sector ?? 'Other',
         history,
+        beta: (quote as any).beta ?? null,
       });
     } catch (e) {
       console.error('Yahoo Finance quote error:', e);
@@ -620,12 +614,18 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
     }
   });
 
+  function snaptradeClient(clientId: string, consumerKey: string) {
+    return new Snaptrade({ clientId, consumerKey });
+  }
+
   // --- SnapTrade routes ---
   app.post('/api/snaptrade/register', async (req, res) => {
-    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { firebaseUid } = req.body as { firebaseUid: string };
-    if (!firebaseUid) return res.status(400).json({ error: 'firebaseUid required' });
-    const doRegister = () => snaptrade!.authentication.registerSnapTradeUser({ userId: firebaseUid });
+    const { firebaseUid, clientId, consumerKey } = req.body as { firebaseUid: string; clientId: string; consumerKey: string };
+    if (!firebaseUid || !clientId || !consumerKey) {
+      return res.status(400).json({ error: 'firebaseUid, clientId, and consumerKey required' });
+    }
+    const client = snaptradeClient(clientId, consumerKey);
+    const doRegister = () => client.authentication.registerSnapTradeUser({ userId: firebaseUid });
     try {
       const response = await doRegister();
       const { userId: snaptradeUserId, userSecret } = response.data as { userId: string; userSecret: string };
@@ -634,13 +634,20 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
       if (e?.status === 400) {
         // User already exists in SnapTrade — delete and re-register to get a fresh secret
         try {
-          await snaptrade.authentication.deleteSnapTradeUser({ userId: firebaseUid });
+          await client.authentication.deleteSnapTradeUser({ userId: firebaseUid });
           const response = await doRegister();
           const { userId: snaptradeUserId, userSecret } = response.data as { userId: string; userSecret: string };
           return res.json({ snaptradeUserId, userSecret });
         } catch (e2: any) {
           console.error('SnapTrade re-register error:', e2);
-          const detail = e2?.responseBody ? JSON.parse(e2.responseBody)?.detail : null;
+          let detail: string | null = null;
+          try {
+            detail = typeof e2?.responseBody === 'string'
+              ? JSON.parse(e2.responseBody)?.detail
+              : e2?.responseBody?.detail ?? null;
+          } catch {
+            detail = null;
+          }
           return res.status(500).json({ error: detail ?? 'Registration failed — delete existing users from the SnapTrade dashboard and try again' });
         }
       }
@@ -650,17 +657,18 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
   });
 
   app.post('/api/snaptrade/connect-url', async (req, res) => {
-    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { snaptradeUserId, userSecret } = req.body as {
+    const { snaptradeUserId, userSecret, clientId, consumerKey } = req.body as {
       snaptradeUserId: string;
       userSecret: string;
+      clientId: string;
+      consumerKey: string;
     };
-    if (!snaptradeUserId || !userSecret) {
-      return res.status(400).json({ error: 'snaptradeUserId and userSecret required' });
+    if (!snaptradeUserId || !userSecret || !clientId || !consumerKey) {
+      return res.status(400).json({ error: 'snaptradeUserId, userSecret, clientId, and consumerKey required' });
     }
     const redirectUri = `${req.headers.origin ?? ''}?snaptrade_auth=success`;
     try {
-      const response = await snaptrade.authentication.loginSnapTradeUser({
+      const response = await snaptradeClient(clientId, consumerKey).authentication.loginSnapTradeUser({
         userId: snaptradeUserId,
         userSecret,
         customRedirect: redirectUri,
@@ -674,13 +682,17 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
   });
 
   app.post('/api/snaptrade/accounts', async (req, res) => {
-    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { snaptradeUserId, userSecret } = req.body as { snaptradeUserId: string; userSecret: string };
-    if (!snaptradeUserId || !userSecret) {
-      return res.status(400).json({ error: 'snaptradeUserId and userSecret required' });
+    const { snaptradeUserId, userSecret, clientId, consumerKey } = req.body as {
+      snaptradeUserId: string;
+      userSecret: string;
+      clientId: string;
+      consumerKey: string;
+    };
+    if (!snaptradeUserId || !userSecret || !clientId || !consumerKey) {
+      return res.status(400).json({ error: 'snaptradeUserId, userSecret, clientId, and consumerKey required' });
     }
     try {
-      const response = await snaptrade.accountInformation.listUserAccounts({
+      const response = await snaptradeClient(clientId, consumerKey).accountInformation.listUserAccounts({
         userId: snaptradeUserId,
         userSecret,
       });
@@ -699,17 +711,18 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
   });
 
   app.delete('/api/snaptrade/disconnect', async (req, res) => {
-    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { snaptradeUserId, userSecret, authorizationId } = req.body as {
+    const { snaptradeUserId, userSecret, authorizationId, clientId, consumerKey } = req.body as {
       snaptradeUserId: string;
       userSecret: string;
       authorizationId: string;
+      clientId: string;
+      consumerKey: string;
     };
-    if (!snaptradeUserId || !userSecret || !authorizationId) {
-      return res.status(400).json({ error: 'snaptradeUserId, userSecret, authorizationId required' });
+    if (!snaptradeUserId || !userSecret || !authorizationId || !clientId || !consumerKey) {
+      return res.status(400).json({ error: 'snaptradeUserId, userSecret, authorizationId, clientId, and consumerKey required' });
     }
     try {
-      await snaptrade.connections.removeBrokerageAuthorization({
+      await snaptradeClient(clientId, consumerKey).connections.removeBrokerageAuthorization({
         authorizationId,
         userId: snaptradeUserId,
         userSecret,
@@ -722,18 +735,20 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
   });
 
   app.post('/api/snaptrade/sync', async (req, res) => {
-    if (!snaptrade) return res.status(503).json({ error: 'SnapTrade not configured' });
-    const { snaptradeUserId, userSecret, accountIds } = req.body as {
+    const { snaptradeUserId, userSecret, accountIds, clientId, consumerKey } = req.body as {
       snaptradeUserId: string;
       userSecret: string;
       accountIds: string[];
+      clientId: string;
+      consumerKey: string;
     };
-    if (!snaptradeUserId || !userSecret) {
-      return res.status(400).json({ error: 'snaptradeUserId and userSecret required' });
+    if (!snaptradeUserId || !userSecret || !clientId || !consumerKey) {
+      return res.status(400).json({ error: 'snaptradeUserId, userSecret, clientId, and consumerKey required' });
     }
     if (!accountIds?.length) {
       return res.json({ transactions: [] });
     }
+    const client = snaptradeClient(clientId, consumerKey);
     try {
       type RawPosition = {
         symbol?: { symbol?: { symbol?: string; raw_symbol?: string } };
@@ -745,7 +760,7 @@ Write 2-3 sentences of professional analysis covering diversification, strengths
       const positionMap = new Map<string, { shares: number; price: number }>();
 
       for (const accountId of accountIds) {
-        const response = await snaptrade!.accountInformation.getUserAccountPositions({
+        const response = await client.accountInformation.getUserAccountPositions({
           accountId,
           userId: snaptradeUserId,
           userSecret,
