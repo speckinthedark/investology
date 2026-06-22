@@ -262,14 +262,14 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-4 sm:gap-8 flex-wrap">
+              <div className="flex items-center gap-4 overflow-x-auto md:overflow-visible md:flex-wrap md:gap-8 [-webkit-overflow-scrolling:touch]">
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Cash</div>
                   <div className="text-base font-black text-blue-400">
                     {isHidden ? HIDDEN : `$${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                   </div>
                 </div>
-                <div>
+                <div className="shrink-0">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Total Gain</div>
                   <div className={cn('text-base font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {isHidden
@@ -277,7 +277,7 @@ export default function App() {
                       : `${totalPortfolioGain >= 0 ? '+' : ''}$${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${totalPortfolioGainPct.toFixed(2)}%)`}
                   </div>
                 </div>
-                <div>
+                <div className="shrink-0">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Today</div>
                   <div className={cn('text-base font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {isHidden
@@ -286,7 +286,7 @@ export default function App() {
                   </div>
                 </div>
                 {ytdTWR !== null && !isPriceHistoryLoading && (
-                  <div>
+                  <div className="shrink-0">
                     <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">YTD Return</div>
                     <div className={cn('text-base font-black', ytdTWR >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                       {isHidden ? HIDDEN : `${ytdTWR >= 0 ? '+' : ''}${ytdTWR.toFixed(2)}%`}
@@ -294,7 +294,7 @@ export default function App() {
                   </div>
                 )}
                 {sp500YTD !== null && (
-                  <div>
+                  <div className="shrink-0">
                     <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">S&amp;P 500 YTD</div>
                     <div className={cn('text-base font-black', sp500YTD >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                       {`${sp500YTD >= 0 ? '+' : ''}${sp500YTD.toFixed(2)}%`}
