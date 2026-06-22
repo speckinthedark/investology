@@ -10,6 +10,7 @@ import { fetchStockData, fetchPriceHistory, fetchSP500YTD, fetchFXRates } from '
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar, { Tab } from './components/Sidebar';
+import MobileBottomNav from './components/MobileBottomNav';
 import Topbar from './components/Topbar';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
@@ -196,7 +197,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <PrivacyContext.Provider value={isHidden}>
-      <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr', height: '100vh' }}>
+      <div className="grid grid-cols-1 md:grid-cols-[64px_1fr] h-screen">
         <Toaster position="top-center" theme="dark" richColors />
 
         <Sidebar
@@ -322,7 +323,7 @@ export default function App() {
           </div>
 
           {/* Scrollable tab content */}
-          <div className={cn('flex-1 min-h-0 custom-scrollbar', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
+          <div className={cn('flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -417,6 +418,12 @@ export default function App() {
             </AnimatePresence>
           </div>
         </div>
+
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          connectionStatus={connectionStatus}
+        />
 
         {modal.open && (
           <TransactionModal
