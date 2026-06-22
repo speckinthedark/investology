@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit, Eye, EyeOff } from 'lucide-react';
+import { RefreshCw, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
@@ -263,12 +263,15 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-4 overflow-x-auto md:overflow-visible md:flex-wrap md:gap-8 [-webkit-overflow-scrolling:touch]">
-                <div>
+                <button
+                  onClick={() => setShowCashModal(true)}
+                  className="text-left hover:bg-zinc-800/50 rounded-lg transition-colors px-2 py-1 -mx-2 -my-1 shrink-0"
+                >
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Cash</div>
                   <div className="text-base font-black text-blue-400">
                     {isHidden ? HIDDEN : `$${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                   </div>
-                </div>
+                </button>
                 <div className="shrink-0">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Total Gain</div>
                   <div className={cn('text-base font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
@@ -302,23 +305,6 @@ export default function App() {
                   </div>
                 )}
               </div>
-            </div>
-
-            <div className="flex gap-2 shrink-0">
-              <button
-                onClick={() => openModal('buy')}
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-white rounded-xl font-bold hover:bg-zinc-700 transition-all text-[11px] uppercase tracking-widest"
-              >
-                <ArrowUpDown className="w-3.5 h-3.5" />
-                Trade Asset
-              </button>
-              <button
-                onClick={() => setShowCashModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all text-[11px] uppercase tracking-widest"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                Edit Cash
-              </button>
             </div>
           </div>
 
