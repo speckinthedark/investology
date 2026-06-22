@@ -43,12 +43,12 @@ Create a `.env` file at the repo root:
 
 ```
 GEMINI_API_KEY=your_gemini_key          # required for AI agent features
-SNAPTRADE_CLIENT_ID=your_client_id      # required for brokerage sync (SnapTrade)
-SNAPTRADE_CONSUMER_KEY=your_consumer_key
 FINNHUB_API_KEY=                        # optional fallback, mostly unused now
 ```
 
 `firebase-applet-config.json` must also be present (contains Firebase project credentials). Do not commit either file.
+
+SnapTrade brokerage sync does not require server-side configuration — each user enters their own SnapTrade `clientId`/`consumerKey` in the Connections tab (stored in their Firestore settings doc).
 
 ---
 

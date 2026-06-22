@@ -156,15 +156,11 @@ Create a `.env` file at the repo root:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
-SNAPTRADE_CLIENT_ID=your_snaptrade_client_id
-SNAPTRADE_CONSUMER_KEY=your_snaptrade_consumer_key
 ```
 
 | Variable | Required | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | Yes | Powers AI portfolio analysis and ADK agents |
-| `SNAPTRADE_CLIENT_ID` | Yes* | SnapTrade brokerage sync (*optional if not using Connections tab) |
-| `SNAPTRADE_CONSUMER_KEY` | Yes* | SnapTrade brokerage sync (*optional if not using Connections tab) |
 | `FINNHUB_API_KEY` | No | Legacy — no longer used for primary data |
 
 ### Running Locally
@@ -305,4 +301,4 @@ npx firebase deploy --only firestore:rules
 - **Equities only**: The import pipeline filters to `STK` (stock) trades. Options, futures, and crypto are excluded.
 - **YTD TWR**: Computed from monthly price snapshots. Tickers bought and fully sold within the current year (no longer in the portfolio) are excluded from the calculation as their historical prices are not retained.
 - **Performance tab beta**: Yahoo Finance does not return beta for all tickers (e.g. ETFs, some foreign listings). Portfolio beta excludes holdings without beta data and is labeled accordingly.
-- **SnapTrade**: Requires a SnapTrade developer account. The `SNAPTRADE_CLIENT_ID` and `SNAPTRADE_CONSUMER_KEY` env vars must be set; without them the Connections tab will return 503 and brokerage sync is disabled.
+- **SnapTrade**: Each user brings their own free SnapTrade developer account (`clientId`/`consumerKey`), entered in the Connections tab. This keeps each user's brokerage connection quota independent rather than shared across everyone using the app. Switching keys later disconnects existing brokerage links, since SnapTrade ties registered users to the developer account that created them.
