@@ -189,7 +189,7 @@ export default function App() {
         />
 
         {/* Main column */}
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex flex-col overflow-hidden h-full">
           <Topbar
             user={user}
             isRefreshing={isRefreshing}
