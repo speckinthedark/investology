@@ -65,14 +65,19 @@ export function useSnaptrade(user: User | null) {
 
   const getConnectUrl = async (): Promise<string> => {
     if (!credentials) throw new Error('Not registered');
-    const res = await fetch('/api/snaptrade/connect-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
-    if (!res.ok) throw new Error((await res.json()).error);
-    const { redirectUri } = await res.json() as { redirectUri: string };
-    return redirectUri;
+    try {
+      const res = await fetch('/api/snaptrade/connect-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const { redirectUri } = await res.json() as { redirectUri: string };
+      return redirectUri;
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to generate connect URL');
+      throw e;
+    }
   };
 
   const refreshAccounts = async () => {
