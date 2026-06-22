@@ -175,7 +175,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <PrivacyContext.Provider value={isHidden}>
-      <div className="grid grid-cols-1 md:grid-cols-[64px_1fr] h-screen">
+      <div className="grid grid-cols-1 md:grid-cols-[64px_1fr] h-dvh">
         <Toaster position="top-center" theme="dark" richColors />
 
         <Sidebar
