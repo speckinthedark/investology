@@ -27,4 +27,12 @@ html, body, #root {
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #52525b;
   }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

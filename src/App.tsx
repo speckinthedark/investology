@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCw, ArrowUpDown, CreditCard, BrainCircuit, Eye, EyeOff } from 'lucide-react';
+import { RefreshCw, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
 import { usePortfolio } from './hooks/usePortfolio';
-import { fetchStockData, fetchPriceHistory, fetchSP500YTD, fetchFXRates } from './services/stockService';
+import { fetchStockData, fetchSP500YTD, fetchFXRates } from './services/stockService';
 
 import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar, { Tab } from './components/Sidebar';
+import MobileBottomNav from './components/MobileBottomNav';
 import Topbar from './components/Topbar';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
@@ -24,10 +25,9 @@ import ResearchTab from './components/tabs/ResearchTab';
 import ConnectionsTab from './components/tabs/ConnectionsTab';
 import { useSnaptrade } from './hooks/useSnaptrade';
 
-import { StockData, Transaction, TransactionType, PriceHistory } from './types';
+import { StockData, Transaction, TransactionType } from './types';
 import { cn } from './lib/utils';
 import { PrivacyContext, HIDDEN } from './contexts/PrivacyContext';
-import { computeYTDTWR } from './lib/portfolio';
 
 export default function App() {
   const { user, isReady, login, logout } = useAuth();
@@ -35,8 +35,6 @@ export default function App() {
   const snaptrade = useSnaptrade(user);
 
   const [stockPrices, setStockPrices] = useState<Record<string, StockData>>({});
-  const [priceHistory, setPriceHistory] = useState<PriceHistory>({});
-  const [isPriceHistoryLoading, setIsPriceHistoryLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
@@ -58,20 +56,6 @@ export default function App() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [holdings]);
-
-  // Re-fetch monthly history whenever the set of held tickers changes
-  const holdingTickersKey = holdings.map((h) => h.ticker).sort().join(',');
-  useEffect(() => {
-    const tickers = holdings.map((h) => h.ticker).filter((t) => t !== 'CASH');
-    if (tickers.length === 0) return;
-    // Fetch from Jan 1 of the previous year to cover full YTD + last 12 months
-    const from = new Date(new Date().getFullYear() - 1, 0, 1).toISOString().split('T')[0];
-    setIsPriceHistoryLoading(true);
-    fetchPriceHistory(tickers, from)
-      .then(setPriceHistory)
-      .finally(() => setIsPriceHistoryLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [holdingTickersKey]);
 
   useEffect(() => { fetchSP500YTD().then(setSP500YTD); }, []);
   useEffect(() => { fetchFXRates().then(setFxRates); }, []);
@@ -129,11 +113,6 @@ export default function App() {
   const totalPortfolioGainPct = totalCostBasis > 0 ? (totalPortfolioGain / totalCostBasis) * 100 : 0;
   const totalDayChange = holdings.reduce((acc, h) => acc + h.shares * (stockPrices[h.ticker]?.change ?? 0), 0);
   const totalDayChangePct = totalPortfolioValue - totalDayChange > 0 ? (totalDayChange / (totalPortfolioValue - totalDayChange)) * 100 : 0;
-
-  const ytdTWR = useMemo(
-    () => computeYTDTWR(transactions, priceHistory, stockPrices),
-    [transactions, priceHistory, stockPrices],
-  );
 
   const connectionStatus: 'connected' | 'error' | 'disconnected' = snaptrade.syncError
     ? 'error'
@@ -196,7 +175,7 @@ export default function App() {
   return (
     <ErrorBoundary>
     <PrivacyContext.Provider value={isHidden}>
-      <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr', height: '100vh' }}>
+      <div className="grid grid-cols-1 md:grid-cols-[64px_1fr] grid-rows-1 h-dvh">
         <Toaster position="top-center" theme="dark" richColors />
 
         <Sidebar
@@ -210,7 +189,7 @@ export default function App() {
         />
 
         {/* Main column */}
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex flex-col overflow-hidden h-full">
           <Topbar
             user={user}
             isRefreshing={isRefreshing}
@@ -261,14 +240,17 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-4 sm:gap-8 flex-wrap">
-                <div>
+              <div className="flex items-center gap-4 overflow-x-auto md:overflow-visible md:flex-wrap md:gap-8 [-webkit-overflow-scrolling:touch] no-scrollbar">
+                <button
+                  onClick={() => setShowCashModal(true)}
+                  className="text-left hover:bg-zinc-800/50 rounded-lg transition-colors px-2 py-1 -mx-2 -my-1 shrink-0"
+                >
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Cash</div>
                   <div className="text-base font-black text-blue-400">
                     {isHidden ? HIDDEN : `$${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                   </div>
-                </div>
-                <div>
+                </button>
+                <div className="shrink-0">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Total Gain</div>
                   <div className={cn('text-base font-black', totalPortfolioGain >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {isHidden
@@ -276,7 +258,7 @@ export default function App() {
                       : `${totalPortfolioGain >= 0 ? '+' : ''}$${Math.abs(totalPortfolioGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${totalPortfolioGainPct.toFixed(2)}%)`}
                   </div>
                 </div>
-                <div>
+                <div className="shrink-0">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">Today</div>
                   <div className={cn('text-base font-black', totalDayChange >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                     {isHidden
@@ -284,16 +266,8 @@ export default function App() {
                       : `${totalDayChange >= 0 ? '+' : ''}$${Math.abs(totalDayChange).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${totalDayChangePct.toFixed(2)}%)`}
                   </div>
                 </div>
-                {ytdTWR !== null && !isPriceHistoryLoading && (
-                  <div>
-                    <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">YTD Return</div>
-                    <div className={cn('text-base font-black', ytdTWR >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                      {isHidden ? HIDDEN : `${ytdTWR >= 0 ? '+' : ''}${ytdTWR.toFixed(2)}%`}
-                    </div>
-                  </div>
-                )}
                 {sp500YTD !== null && (
-                  <div>
+                  <div className="shrink-0">
                     <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">S&amp;P 500 YTD</div>
                     <div className={cn('text-base font-black', sp500YTD >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
                       {`${sp500YTD >= 0 ? '+' : ''}${sp500YTD.toFixed(2)}%`}
@@ -302,27 +276,10 @@ export default function App() {
                 )}
               </div>
             </div>
-
-            <div className="flex gap-2 shrink-0">
-              <button
-                onClick={() => openModal('buy')}
-                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 text-white rounded-xl font-bold hover:bg-zinc-700 transition-all text-[11px] uppercase tracking-widest"
-              >
-                <ArrowUpDown className="w-3.5 h-3.5" />
-                Trade Asset
-              </button>
-              <button
-                onClick={() => setShowCashModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-500 transition-all text-[11px] uppercase tracking-widest"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                Edit Cash
-              </button>
-            </div>
           </div>
 
           {/* Scrollable tab content */}
-          <div className={cn('flex-1 min-h-0 custom-scrollbar', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
+          <div className={cn('flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -348,8 +305,6 @@ export default function App() {
                     transactions={transactions}
                     onEdit={(tx) => openModal(tx.type, tx)}
                     onDelete={handleDeleteTransaction}
-                    onAddTrade={() => openModal('buy')}
-                    onAddCash={() => openModal('deposit')}
                     onExport={handleExport}
                     onClearAll={handleClearAll}
                   />
@@ -417,6 +372,12 @@ export default function App() {
             </AnimatePresence>
           </div>
         </div>
+
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          connectionStatus={connectionStatus}
+        />
 
         {modal.open && (
           <TransactionModal

@@ -147,7 +147,7 @@ export default function PerformanceTab({
     <div className="flex flex-col gap-6">
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard
           label="Unrealized P/L"
           value={isHidden ? HIDDEN : fmt$(unrealizedPL)}
@@ -186,7 +186,7 @@ export default function PerformanceTab({
       </div>
 
       {/* ── Two-column body ── */}
-      <div className="grid grid-cols-[3fr_2fr] gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-6 items-start">
         {/* Left: holdings table */}
         <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
           <h3 className="text-xl font-bold italic text-white mb-6">Holdings Performance</h3>
@@ -196,18 +196,20 @@ export default function PerformanceTab({
               <p className="text-sm italic">Add holdings to see performance breakdown.</p>
             </div>
           ) : (
-            <div>
-              <div className="grid grid-cols-[1.4fr_1.8fr_1fr_1fr_0.8fr_80px] gap-3 pb-3 border-b border-zinc-800">
-                <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Ticker</div>
-                <HeaderCell label="Gain %" sortKey="gainPct" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <HeaderCell label="Unrealized P/L" sortKey="gainDollar" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <HeaderCell label="Mkt Value" sortKey="marketValue" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <HeaderCell label="Weight" sortKey="weight" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-                <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">History</div>
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: '600px' }}>
+                <div className="grid grid-cols-[1.4fr_1.8fr_1fr_1fr_0.8fr_80px] gap-3 pb-3 border-b border-zinc-800">
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Ticker</div>
+                  <HeaderCell label="Gain %" sortKey="gainPct" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <HeaderCell label="Unrealized P/L" sortKey="gainDollar" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <HeaderCell label="Mkt Value" sortKey="marketValue" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <HeaderCell label="Weight" sortKey="weight" activeSortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">History</div>
+                </div>
+                {sorted.map((h) => (
+                  <HoldingRow key={h.ticker} holding={h} isHidden={isHidden} maxAbsGainPct={maxAbsGainPct} />
+                ))}
               </div>
-              {sorted.map((h) => (
-                <HoldingRow key={h.ticker} holding={h} isHidden={isHidden} maxAbsGainPct={maxAbsGainPct} />
-              ))}
             </div>
           )}
         </div>

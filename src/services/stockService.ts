@@ -1,4 +1,4 @@
-import { StockData, PriceHistory, StockDetail, StockInsights, ScreenerQuote, StockChartData } from '../types';
+import { StockData, StockDetail, StockInsights, ScreenerQuote, StockChartData } from '../types';
 
 export async function fetchStockData(ticker: string): Promise<StockData> {
   try {
@@ -20,21 +20,6 @@ async function fetchStockFromAI(ticker: string): Promise<StockData> {
     return await res.json();
   } catch {
     return mockStockData(ticker);
-  }
-}
-
-export async function fetchPriceHistory(tickers: string[], from: string): Promise<PriceHistory> {
-  try {
-    const res = await fetch('/api/price-history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tickers, from }),
-    });
-    if (!res.ok) throw new Error(res.statusText);
-    return await res.json();
-  } catch (e) {
-    console.warn('Price history fetch failed:', e);
-    return {};
   }
 }
 

@@ -55,9 +55,9 @@ export default function Sidebar({ activeTab, onTabChange, onLogout, user, isRefr
   return (
     <div
       className={cn(
-        'group fixed left-0 top-0 h-full z-20',
+        'group hidden md:flex fixed left-0 top-0 h-full z-20',
         'bg-zinc-900 border-r border-zinc-800',
-        'flex flex-col',
+        'md:flex-col',
         pinned ? 'w-[220px]' : 'w-16 hover:w-[220px]',
         'transition-[width] duration-200 ease-in-out',
         'overflow-hidden',
