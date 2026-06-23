@@ -72,13 +72,13 @@ export default function ResearchTab({ holdings, initialTicker, onInitialTickerCo
   const holding = detail ? holdings.find((h) => h.ticker === detail.ticker) : undefined;
 
   return (
-    <div className="h-full flex flex-col p-6 gap-4 min-h-0">
+    <div className="flex flex-col p-6 gap-4 lg:h-full lg:min-h-0">
       <div className="shrink-0">
         <StockSearchBar onSearch={handleSearch} isLoading={status === 'loading'} />
       </div>
 
       {status === 'idle' && (
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar [-webkit-overflow-scrolling:touch]">
+        <div className="custom-scrollbar lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:[-webkit-overflow-scrolling:touch]">
           <ScreenerView onSearch={handleSearch} />
         </div>
       )}
@@ -104,7 +104,7 @@ export default function ResearchTab({ holdings, initialTicker, onInitialTickerCo
       )}
 
       {status === 'success' && detail && (
-        <div className="flex-1 min-h-0 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 lg:flex-1 lg:min-h-0">
           <div className="shrink-0">
             <button
               onClick={handleBack}
@@ -125,7 +125,7 @@ export default function ResearchTab({ holdings, initialTicker, onInitialTickerCo
               <InsightsStrip insights={insights} currentPrice={detail.price} />
             </div>
           )}
-          <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden [-webkit-overflow-scrolling:touch]">
+          <div className="lg:flex-1 lg:min-h-0 lg:overflow-hidden">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_3fr] lg:h-full">
               <div className="lg:overflow-y-auto custom-scrollbar [-webkit-overflow-scrolling:touch]">
                 <StockStatsTable detail={detail} insights={insights} />
