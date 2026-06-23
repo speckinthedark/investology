@@ -12,6 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar, { Tab } from './components/Sidebar';
 import MobileBottomNav from './components/MobileBottomNav';
 import Topbar from './components/Topbar';
+import PullToRefresh from './components/PullToRefresh';
 import SnaptradeStatusPill from './components/shared/SnaptradeStatusPill';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
@@ -284,7 +285,12 @@ export default function App() {
           </div>
 
           {/* Scrollable tab content */}
-          <div className={cn('flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
+          <PullToRefresh
+            className={cn('flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}
+            onRefresh={refreshPrices}
+            isRefreshing={isRefreshing}
+            disabled={!['overview', 'transactions', 'performance'].includes(activeTab)}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -375,7 +381,7 @@ export default function App() {
                 )}
               </motion.div>
             </AnimatePresence>
-          </div>
+          </PullToRefresh>
         </div>
 
         <MobileBottomNav
