@@ -288,7 +288,7 @@ npx firebase deploy --only firestore:rules
         │   └── MentionInput.tsx
         └── shared/
             ├── TickerLogo.tsx       # Company logo (Parqet CDN, FMP fallback)
-            └── SnaptradeStatusPill.tsx  # Connection status indicator in Topbar
+            └── SnaptradeStatusPill.tsx  # Connection status indicator in KPI header
 ```
 
 ---
