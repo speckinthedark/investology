@@ -78,7 +78,7 @@ export default function ResearchTab({ holdings, initialTicker, onInitialTickerCo
       </div>
 
       {status === 'idle' && (
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar [-webkit-overflow-scrolling:touch]">
           <ScreenerView onSearch={handleSearch} />
         </div>
       )}
@@ -125,9 +125,9 @@ export default function ResearchTab({ holdings, initialTicker, onInitialTickerCo
               <InsightsStrip insights={insights} currentPrice={detail.price} />
             </div>
           )}
-          <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden [-webkit-overflow-scrolling:touch]">
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_3fr] lg:h-full">
-              <div className="lg:overflow-y-auto custom-scrollbar">
+              <div className="lg:overflow-y-auto custom-scrollbar [-webkit-overflow-scrolling:touch]">
                 <StockStatsTable detail={detail} insights={insights} />
               </div>
               <div className="flex flex-col gap-4 lg:gap-0 lg:h-full lg:overflow-y-auto custom-scrollbar lg:[scroll-snap-type:y_mandatory]">
