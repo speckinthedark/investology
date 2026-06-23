@@ -283,7 +283,10 @@ export default function App() {
 
           {/* Scrollable tab content */}
           <PullToRefresh
-            className={cn('flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}
+            className={cn(
+              'flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0 overflow-y-auto',
+              activeTab === 'research' && 'lg:overflow-hidden'
+            )}
             onRefresh={refreshPrices}
             isRefreshing={isRefreshing}
             disabled={!['overview', 'transactions', 'performance'].includes(activeTab)}
