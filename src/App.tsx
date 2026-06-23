@@ -12,6 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar, { Tab } from './components/Sidebar';
 import MobileBottomNav from './components/MobileBottomNav';
 import Topbar from './components/Topbar';
+import SnaptradeStatusPill from './components/shared/SnaptradeStatusPill';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
 import TransactionModal from './components/TransactionModal';
@@ -195,11 +196,6 @@ export default function App() {
             isRefreshing={isRefreshing}
             onRefresh={refreshPrices}
             onLogout={logout}
-            snaptradeAccounts={snaptrade.accounts}
-            snaptradeLastSyncedAt={snaptrade.lastSyncedAt}
-            snaptradeSyncing={snaptrade.isSyncing}
-            snaptradeSyncError={snaptrade.syncError}
-            onNavigateToConnections={() => setActiveTab('connections')}
           />
           {firestoreError && (
             <div className="bg-rose-950/80 border-b border-rose-800 px-4 py-3 text-sm text-rose-300 flex items-start gap-2 shrink-0">
@@ -274,6 +270,15 @@ export default function App() {
                     </div>
                   </div>
                 )}
+                <div className="shrink-0">
+                  <SnaptradeStatusPill
+                    accounts={snaptrade.accounts}
+                    lastSyncedAt={snaptrade.lastSyncedAt}
+                    isSyncing={snaptrade.isSyncing}
+                    syncError={snaptrade.syncError}
+                    onNavigateToConnections={() => setActiveTab('connections')}
+                  />
+                </div>
               </div>
             </div>
           </div>
