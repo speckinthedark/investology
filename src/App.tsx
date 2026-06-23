@@ -11,7 +11,9 @@ import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar, { Tab } from './components/Sidebar';
 import MobileBottomNav from './components/MobileBottomNav';
-import Topbar from './components/Topbar';
+import AccountMenu from './components/AccountMenu';
+import PullToRefresh from './components/PullToRefresh';
+import SnaptradeStatusPill from './components/shared/SnaptradeStatusPill';
 import ConfirmDialog from './components/ConfirmDialog';
 import CashBalanceModal from './components/CashBalanceModal';
 import TransactionModal from './components/TransactionModal';
@@ -190,17 +192,6 @@ export default function App() {
 
         {/* Main column */}
         <div className="flex flex-col overflow-hidden h-full">
-          <Topbar
-            user={user}
-            isRefreshing={isRefreshing}
-            onRefresh={refreshPrices}
-            onLogout={logout}
-            snaptradeAccounts={snaptrade.accounts}
-            snaptradeLastSyncedAt={snaptrade.lastSyncedAt}
-            snaptradeSyncing={snaptrade.isSyncing}
-            snaptradeSyncError={snaptrade.syncError}
-            onNavigateToConnections={() => setActiveTab('connections')}
-          />
           {firestoreError && (
             <div className="bg-rose-950/80 border-b border-rose-800 px-4 py-3 text-sm text-rose-300 flex items-start gap-2 shrink-0">
               <span className="font-bold shrink-0">Firestore error:</span>
@@ -209,7 +200,19 @@ export default function App() {
           )}
 
           {/* Persistent KPI header */}
-          <div className="bg-zinc-900 border-b border-zinc-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+          <div className="relative bg-zinc-900 border-b border-zinc-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+            <div className="absolute top-3 right-4 sm:right-6 flex items-center gap-2">
+              <SnaptradeStatusPill
+                accounts={snaptrade.accounts}
+                lastSyncedAt={snaptrade.lastSyncedAt}
+                isSyncing={snaptrade.isSyncing}
+                syncError={snaptrade.syncError}
+                onNavigateToConnections={() => setActiveTab('connections')}
+              />
+              <div className="md:hidden">
+                <AccountMenu user={user} onLogout={logout} />
+              </div>
+            </div>
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
               <div className="flex items-center gap-2 mb-3 sm:mb-4">
@@ -279,7 +282,15 @@ export default function App() {
           </div>
 
           {/* Scrollable tab content */}
-          <div className={cn('flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0', activeTab === 'research' ? 'overflow-hidden' : 'overflow-y-auto')}>
+          <PullToRefresh
+            className={cn(
+              'flex-1 min-h-0 custom-scrollbar pb-16 md:pb-0 overflow-y-auto',
+              activeTab === 'research' && 'lg:overflow-hidden'
+            )}
+            onRefresh={refreshPrices}
+            isRefreshing={isRefreshing}
+            disabled={!['overview', 'transactions', 'performance'].includes(activeTab)}
+          >
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -287,7 +298,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className={activeTab === 'research' ? 'h-full' : 'p-6'}
+                className={activeTab === 'research' ? 'lg:h-full' : 'p-6'}
               >
                 {activeTab === 'overview' && (
                   <OverviewTab
@@ -370,7 +381,7 @@ export default function App() {
                 )}
               </motion.div>
             </AnimatePresence>
-          </div>
+          </PullToRefresh>
         </div>
 
         <MobileBottomNav

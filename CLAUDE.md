@@ -103,7 +103,7 @@ src/
       PortfolioCallout.tsx       # "You hold X shares" callout if ticker is in portfolio
     shared/
       TickerLogo.tsx             # Company logo via Parqet CDN, FMP fallback
-      SnaptradeStatusPill.tsx    # Connection status indicator shown in Topbar
+      SnaptradeStatusPill.tsx    # Connection status indicator shown in KPI header
     agent/                       # AI agent UI components
       AgentChat.tsx
       AgentMessage.tsx
@@ -111,8 +111,10 @@ src/
       PortfolioRiskReport.tsx
       DCFResultCard.tsx
       MentionInput.tsx
-    Sidebar.tsx                  # Left nav (tab icons, refresh, logout)
-    Topbar.tsx                   # Top bar with SnapTrade sync status pill
+    Sidebar.tsx                  # Left nav (tab icons, refresh, logout) — desktop only
+    MobileBottomNav.tsx          # Bottom tab bar — mobile only
+    AccountMenu.tsx              # Mobile-only avatar + tap-to-reveal email/Sign out dropdown
+    PullToRefresh.tsx            # Touch-gesture pull-to-refresh wrapper (Overview/Transactions/Performance)
     LoginPage.tsx                # Google Sign-In screen
     ErrorBoundary.tsx            # React error boundary
     TransactionModal.tsx         # Buy/sell/deposit/withdrawal form
