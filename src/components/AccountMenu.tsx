@@ -24,8 +24,17 @@ export default function AccountMenu({ user, onLogout }: Props) {
         setOpen(false);
       }
     }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleMouseDown);
-    return () => document.removeEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   return (
@@ -37,7 +46,7 @@ export default function AccountMenu({ user, onLogout }: Props) {
         {initials}
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden z-30">
+        <div className="absolute top-full right-0 mt-2 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden z-10">
           <div className="px-4 py-3 border-b border-zinc-800 text-xs text-zinc-400 truncate">{user.email}</div>
           <button
             onClick={() => { setOpen(false); onLogout(); }}
