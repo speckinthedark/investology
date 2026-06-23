@@ -205,7 +205,16 @@ export default function App() {
           )}
 
           {/* Persistent KPI header */}
-          <div className="bg-zinc-900 border-b border-zinc-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+          <div className="relative bg-zinc-900 border-b border-zinc-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+            <div className="absolute top-3 right-4 sm:right-6">
+              <SnaptradeStatusPill
+                accounts={snaptrade.accounts}
+                lastSyncedAt={snaptrade.lastSyncedAt}
+                isSyncing={snaptrade.isSyncing}
+                syncError={snaptrade.syncError}
+                onNavigateToConnections={() => setActiveTab('connections')}
+              />
+            </div>
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
               <div className="flex items-center gap-2 mb-3 sm:mb-4">
@@ -270,15 +279,6 @@ export default function App() {
                     </div>
                   </div>
                 )}
-                <div className="shrink-0">
-                  <SnaptradeStatusPill
-                    accounts={snaptrade.accounts}
-                    lastSyncedAt={snaptrade.lastSyncedAt}
-                    isSyncing={snaptrade.isSyncing}
-                    syncError={snaptrade.syncError}
-                    onNavigateToConnections={() => setActiveTab('connections')}
-                  />
-                </div>
               </div>
             </div>
           </div>
