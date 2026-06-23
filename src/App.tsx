@@ -11,7 +11,7 @@ import LoginPage from './components/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar, { Tab } from './components/Sidebar';
 import MobileBottomNav from './components/MobileBottomNav';
-import Topbar from './components/Topbar';
+import AccountMenu from './components/AccountMenu';
 import PullToRefresh from './components/PullToRefresh';
 import SnaptradeStatusPill from './components/shared/SnaptradeStatusPill';
 import ConfirmDialog from './components/ConfirmDialog';
@@ -192,12 +192,6 @@ export default function App() {
 
         {/* Main column */}
         <div className="flex flex-col overflow-hidden h-full">
-          <Topbar
-            user={user}
-            isRefreshing={isRefreshing}
-            onRefresh={refreshPrices}
-            onLogout={logout}
-          />
           {firestoreError && (
             <div className="bg-rose-950/80 border-b border-rose-800 px-4 py-3 text-sm text-rose-300 flex items-start gap-2 shrink-0">
               <span className="font-bold shrink-0">Firestore error:</span>
@@ -207,7 +201,7 @@ export default function App() {
 
           {/* Persistent KPI header */}
           <div className="relative bg-zinc-900 border-b border-zinc-800 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
-            <div className="absolute top-3 right-4 sm:right-6">
+            <div className="absolute top-3 right-4 sm:right-6 flex items-center gap-2">
               <SnaptradeStatusPill
                 accounts={snaptrade.accounts}
                 lastSyncedAt={snaptrade.lastSyncedAt}
@@ -215,6 +209,9 @@ export default function App() {
                 syncError={snaptrade.syncError}
                 onNavigateToConnections={() => setActiveTab('connections')}
               />
+              <div className="md:hidden">
+                <AccountMenu user={user} onLogout={logout} />
+              </div>
             </div>
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">Total Portfolio Value</div>
