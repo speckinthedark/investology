@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -33,17 +33,6 @@ export default function PullToRefresh({ onRefresh, isRefreshing, disabled, class
     wasPulling.current = false;
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (disabled || isRefreshing || touchStartY.current == null) return;
-    const delta = e.touches[0].clientY - touchStartY.current;
-    if (delta <= 0) return;
-    wasPulling.current = true;
-    e.preventDefault();
-    const capped = Math.min(delta, MAX_PULL);
-    setPullDistance(capped);
-    pull.set(capped);
-  };
-
   const handleTouchEnd = () => {
     if (disabled || isRefreshing) return;
     if (wasPulling.current && pullDistance >= THRESHOLD) {
@@ -55,6 +44,25 @@ export default function PullToRefresh({ onRefresh, isRefreshing, disabled, class
     pull.set(0);
   };
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (disabled || isRefreshing || touchStartY.current == null) return;
+      const delta = e.touches[0].clientY - touchStartY.current;
+      if (delta <= 0) return;
+      wasPulling.current = true;
+      e.preventDefault();
+      const capped = Math.min(delta, MAX_PULL);
+      setPullDistance(capped);
+      pull.set(capped);
+    };
+
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => el.removeEventListener('touchmove', handleTouchMove);
+  }, [disabled, isRefreshing, pull]);
+
   const showIndicator = isRefreshing || pullDistance > 0;
 
   return (
@@ -62,7 +70,6 @@ export default function PullToRefresh({ onRefresh, isRefreshing, disabled, class
       ref={scrollRef}
       className={cn('relative', className)}
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {showIndicator && (
