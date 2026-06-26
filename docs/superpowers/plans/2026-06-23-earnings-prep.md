@@ -661,6 +661,21 @@ interface Props {
   onDeleteStory: (id: string) => Promise<void>;
 }
 
+function TickerCard({ ticker, count, dimmed, onClick }: { ticker: string; count: number; dimmed: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors text-center ${dimmed ? 'opacity-50 hover:opacity-75' : ''}`}
+    >
+      <TickerLogo ticker={ticker} size="md" />
+      <div className="font-bold text-white text-sm">{ticker}</div>
+      <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+        {count === 0 ? 'No stories yet' : `${count} ${count === 1 ? 'story' : 'stories'}`}
+      </div>
+    </button>
+  );
+}
+
 export default function EarningsPrepTab({ holdings, stories, onSaveStory, onDeleteStory }: Props) {
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
 
@@ -695,22 +710,15 @@ export default function EarningsPrepTab({ holdings, stories, onSaveStory, onDele
     <div className="flex flex-col gap-8">
       {holdings.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {holdings.map((h) => {
-            const count = stories.filter((s) => s.ticker === h.ticker).length;
-            return (
-              <button
-                key={h.ticker}
-                onClick={() => setSelectedTicker(h.ticker)}
-                className="flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors text-center"
-              >
-                <TickerLogo ticker={h.ticker} size="md" />
-                <div className="font-bold text-white text-sm">{h.ticker}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                  {count === 0 ? 'No stories yet' : `${count} ${count === 1 ? 'story' : 'stories'}`}
-                </div>
-              </button>
-            );
-          })}
+          {holdings.map((h) => (
+            <TickerCard
+              key={h.ticker}
+              ticker={h.ticker}
+              count={stories.filter((s) => s.ticker === h.ticker).length}
+              dimmed={false}
+              onClick={() => setSelectedTicker(h.ticker)}
+            />
+          ))}
         </div>
       )}
 
@@ -718,22 +726,15 @@ export default function EarningsPrepTab({ holdings, stories, onSaveStory, onDele
         <div className="flex flex-col gap-3">
           <div className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Archived</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {archivedTickers.map((ticker) => {
-              const count = stories.filter((s) => s.ticker === ticker).length;
-              return (
-                <button
-                  key={ticker}
-                  onClick={() => setSelectedTicker(ticker)}
-                  className="flex flex-col items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors text-center opacity-50 hover:opacity-75"
-                >
-                  <TickerLogo ticker={ticker} size="md" />
-                  <div className="font-bold text-white text-sm">{ticker}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                    {count} {count === 1 ? 'story' : 'stories'}
-                  </div>
-                </button>
-              );
-            })}
+            {archivedTickers.map((ticker) => (
+              <TickerCard
+                key={ticker}
+                ticker={ticker}
+                count={stories.filter((s) => s.ticker === ticker).length}
+                dimmed
+                onClick={() => setSelectedTicker(ticker)}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -742,7 +743,7 @@ export default function EarningsPrepTab({ holdings, stories, onSaveStory, onDele
 }
 ```
 
-`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` is a plain responsive column count with no height-bounding or independent-scroll branching — consistent with the "no `lg:`-gated layout branching" constraint, since this only ever changes column *count*, not anything about scroll/height architecture.
+`TickerCard` is a small local helper used by both grids — the two sections differ only in their source list and the `dimmed` flag, so without this they'd be near-verbatim duplicated JSX. `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` is a plain responsive column count with no height-bounding or independent-scroll branching — consistent with the "no `lg:`-gated layout branching" constraint, since this only ever changes column *count*, not anything about scroll/height architecture.
 
 `archivedTickers` is computed fresh on every render from `stories` vs. `holdings` — no stored "archived" flag anywhere, so it can never drift out of sync with reality, including across the delete-and-recreate cycle that brokerage resync puts `holdings` through. The archived grid only renders when non-empty, and its cards are visually dimmed (`opacity-50 hover:opacity-75`) to distinguish them from active holdings.
 
