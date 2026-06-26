@@ -32,14 +32,17 @@ export default function StoryEditor({ ticker, editingStory, onSave, onClose }: P
   const handleSave = async () => {
     if (!isValid) return;
     setSaving(true);
-    await onSave({
-      id: editingStory?.id,
-      ticker,
-      title: title.trim(),
-      question: question.trim(),
-      metrics: metrics.filter((m) => m.metric.trim().length > 0),
-    });
-    setSaving(false);
+    try {
+      await onSave({
+        id: editingStory?.id,
+        ticker,
+        title: title.trim(),
+        question: question.trim(),
+        metrics: metrics.filter((m) => m.metric.trim().length > 0),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

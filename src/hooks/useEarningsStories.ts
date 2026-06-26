@@ -32,14 +32,19 @@ export function useEarningsStories(user: User | null) {
       ? doc(db, 'users', user.uid, 'earningsStories', story.id)
       : doc(collection(db, 'users', user.uid, 'earningsStories'));
     const existing = stories.find((s) => s.id === story.id);
-    await setDoc(ref, {
-      ticker: story.ticker,
-      title: story.title,
-      question: story.question,
-      metrics: story.metrics,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    });
+    try {
+      await setDoc(ref, {
+        ticker: story.ticker,
+        title: story.title,
+        question: story.question,
+        metrics: story.metrics,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+      });
+    } catch (err) {
+      toast.error('Failed to save story');
+      throw err;
+    }
   };
 
   const deleteStory = async (id: string) => {
