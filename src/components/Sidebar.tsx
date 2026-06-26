@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw, Search, Link } from 'lucide-react';
+import { LayoutDashboard, ArrowUpDown, TrendingUp, BrainCircuit, LogOut, RefreshCw, Search, Link, Newspaper } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { cn } from '../lib/utils';
 
-export type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research' | 'connections';
+export type Tab = 'overview' | 'transactions' | 'performance' | 'deep-dive' | 'research' | 'connections' | 'earnings-prep';
 
 type DotStatus = 'connected' | 'error' | 'disconnected';
 
@@ -13,6 +13,7 @@ const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'performance',  label: 'Performance',  icon: TrendingUp },
   { id: 'research',     label: 'Research',     icon: Search },
   { id: 'connections',  label: 'Connections',  icon: Link },
+  { id: 'earnings-prep', label: 'Earnings Prep', icon: Newspaper },
 ];
 
 interface Props {

@@ -1,4 +1,4 @@
-import { LayoutDashboard, ArrowUpDown, TrendingUp, Search, Link } from 'lucide-react';
+import { LayoutDashboard, ArrowUpDown, TrendingUp, Search, Link, Newspaper } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Tab } from './Sidebar';
 
@@ -10,6 +10,7 @@ const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'performance',  label: 'Performance',  icon: TrendingUp },
   { id: 'research',     label: 'Research',     icon: Search },
   { id: 'connections',  label: 'Connections',  icon: Link },
+  { id: 'earnings-prep', label: 'Earnings Prep', icon: Newspaper },
 ];
 
 interface Props {

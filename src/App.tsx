@@ -5,6 +5,7 @@ import { Toaster, toast } from 'sonner';
 
 import { useAuth } from './hooks/useAuth';
 import { usePortfolio } from './hooks/usePortfolio';
+import { useEarningsStories } from './hooks/useEarningsStories';
 import { fetchStockData, fetchSP500YTD, fetchFXRates } from './services/stockService';
 
 import LoginPage from './components/LoginPage';
@@ -25,6 +26,7 @@ import PerformanceTab from './components/tabs/PerformanceTab';
 import InsightsTab from './components/tabs/InsightsTab';
 import ResearchTab from './components/tabs/ResearchTab';
 import ConnectionsTab from './components/tabs/ConnectionsTab';
+import EarningsPrepTab from './components/tabs/EarningsPrepTab';
 import { useSnaptrade } from './hooks/useSnaptrade';
 
 import { StockData, Transaction, TransactionType } from './types';
@@ -34,6 +36,7 @@ import { PrivacyContext, HIDDEN } from './contexts/PrivacyContext';
 export default function App() {
   const { user, isReady, login, logout } = useAuth();
   const { holdings, transactions, cashBalance, firestoreError, setCashBalance, addTransaction, bulkImportTransactions, deleteTransaction, deleteHolding, clearAllTransactions } = usePortfolio(user);
+  const { stories, saveStory, deleteStory } = useEarningsStories(user);
   const snaptrade = useSnaptrade(user);
 
   const [stockPrices, setStockPrices] = useState<Record<string, StockData>>({});
@@ -377,6 +380,14 @@ export default function App() {
                     onDisconnect={snaptrade.disconnect}
                     onClearApiKeys={snaptrade.clearApiKeys}
                     onShowCsvImport={() => setShowImportGuide(true)}
+                  />
+                )}
+                {activeTab === 'earnings-prep' && (
+                  <EarningsPrepTab
+                    holdings={holdings}
+                    stories={stories}
+                    onSaveStory={saveStory}
+                    onDeleteStory={deleteStory}
                   />
                 )}
               </motion.div>

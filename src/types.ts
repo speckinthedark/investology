@@ -232,3 +232,29 @@ export interface SnaptradeSettings {
   lastSyncedAt: string | null;
   accounts: SnaptradeAccount[];
 }
+
+export interface EarningsMetric {
+  id: string;
+  metric: string;
+  baseline: string;
+  whatToWatch: string;
+  why: string;
+}
+
+export interface EarningsStory {
+  id: string;
+  ticker: string;
+  title: string;
+  question: string;
+  metrics: EarningsMetric[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SaveStoryInput = {
+  id?: string;
+  ticker: string;
+  title: string;
+  question: string;
+  metrics: EarningsMetric[];
+};
