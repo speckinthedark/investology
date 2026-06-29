@@ -28,6 +28,15 @@ service cloud.firestore {
     //   - price: number (required)
     //   - timestamp: string (required)
     //
+    // Collection: /users/{uid}/earningsStories/{storyId}
+    // Fields:
+    //   - ticker: string (required)
+    //   - title: string (required)
+    //   - question: string (required)
+    //   - metrics: list (required)
+    //   - createdAt: string (required)
+    //   - updatedAt: string (required)
+    //
     // ===============================================================
 
     // Helper Functions
@@ -61,6 +70,16 @@ service cloud.firestore {
              data.timestamp is string;
     }
 
+    function isValidEarningsStory(data) {
+      return data.keys().hasAll(['ticker', 'title', 'question', 'metrics', 'createdAt', 'updatedAt']) &&
+             data.ticker is string &&
+             data.title is string &&
+             data.question is string &&
+             data.metrics is list &&
+             data.createdAt is string &&
+             data.updatedAt is string;
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid) && isValidUser(request.resource.data);
@@ -77,6 +96,13 @@ service cloud.firestore {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid) && isValidTransaction(request.resource.data);
         allow update: if isOwner(uid) && isValidTransaction(request.resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      match /earningsStories/{storyId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidEarningsStory(request.resource.data);
+        allow update: if isOwner(uid) && isValidEarningsStory(request.resource.data);
         allow delete: if isOwner(uid);
       }
 
