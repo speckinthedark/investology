@@ -26,7 +26,7 @@ export default function MobileBottomNav({ activeTab, onTabChange, connectionStat
                                        'bg-zinc-600';
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-zinc-900 border-t border-zinc-800 flex items-center justify-around z-20">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-zinc-900 border-t border-zinc-800 flex items-center justify-start overflow-x-auto [-webkit-overflow-scrolling:touch] no-scrollbar z-20">
       {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
         const isActive = activeTab === id;
         const isConnections = id === 'connections';
@@ -35,7 +35,7 @@ export default function MobileBottomNav({ activeTab, onTabChange, connectionStat
             key={id}
             onClick={() => onTabChange(id)}
             className={cn(
-              'flex flex-col items-center gap-1 px-2 py-1.5 transition-colors',
+              'flex flex-col items-center gap-1 px-3 py-1.5 shrink-0 transition-colors',
               isActive ? 'text-violet-400' : 'text-zinc-500',
             )}
           >
